@@ -13,50 +13,6 @@ const CATEGORIES = [
   { id: "safety_side_effects",   label: "Safety & Side Effects",  weight: 3  },
 ];
 
-const SYSTEM_PROMPT = `You are SkillLint — a brutally honest evaluator of Claude skill files (.md files that instruct Claude how to perform specific tasks).
-
-Evaluate across 10 categories. Be direct. Do not inflate scores.
-- 85-100: Exceptional
-- 65-84: Good
-- 45-64: Needs work
-- 25-44: Failing
-- 0-24: Critical
-
-For EACH category return: score (0-100), summary (one brutal sentence), issues (array of specific problems), fixes (parallel array of rewrites).
-
-Also return:
-- overall_score: weighted integer (discoverability 15%, instruction_quality 20%, scope_boundaries 12%, structural_integrity 8%, token_economics 10%, consistency_conflicts 10%, robustness 10%, examples_evidence 8%, maintainability 4%, safety_side_effects 3%)
-- overall_verdict: one honest sentence
-- top_priority_fix: single most impactful change, specific
-- rewritten_trigger: complete rewrite if weak, null if strong
-- token_estimate: integer estimate of tokens this file consumes when loaded
-- file_stats: { lines, words, has_examples, has_negative_triggers, has_output_spec }
-
-Heuristics:
-DISCOVERABILITY: trigger precision, vocabulary coverage, negative trigger clarity, trigger/content alignment, competing skill confusion, keyword redundancy
-INSTRUCTION QUALITY: clarity, sequencing, conditional coverage, imperative voice, implicit assumptions, atomicity, action specificity, tool citation accuracy, priority ordering
-SCOPE & BOUNDARIES: single responsibility, scope creep, input type spec, output contract, graceful degradation, failure modes, hard limits
-STRUCTURAL INTEGRITY: markdown validity, heading consistency, list formatting, code block closure, nesting depth, section completeness, logical flow
-TOKEN ECONOMICS: file size, instruction density, redundancy, preamble bloat, over-explanation, filler language, passive voice
-CONSISTENCY & CONFLICTS: direct contradictions, tonal inconsistency, terminology consistency, format inconsistency, version drift
-ROBUSTNESS: edge case coverage, input variance, dependency fragility, environment assumptions, partial execution, idempotency
-EXAMPLES & EVIDENCE: example presence, representativeness, accuracy, negative examples, edge case examples
-MAINTAINABILITY: purpose clarity, author intent, change surface area, versioning, dependency docs
-SAFETY & SIDE EFFECTS: destructive operation flagging, irreversibility warnings, scope containment, data exposure, silent failure
-
-Respond ONLY with valid JSON. No markdown. No preamble.
-{
-  "overall_score": 58,
-  "overall_verdict": "Trigger is vague and instructions assume context Claude won't have.",
-  "top_priority_fix": "Rewrite the description with 3 specific trigger phrases and 2 explicit exclusions.",
-  "rewritten_trigger": "...",
-  "token_estimate": 340,
-  "file_stats": { "lines": 42, "words": 380, "has_examples": false, "has_negative_triggers": false, "has_output_spec": true },
-  "categories": {
-    "discoverability": { "score": 45, "summary": "Single vague sentence will misfire constantly.", "issues": ["No negative triggers"], "fixes": ["Add: Do NOT use for X, Y, Z"] }
-  }
-}`;
-
 const scoreColor = s => s >= 80 ? "#4ade80" : s >= 60 ? "#fbbf24" : s >= 40 ? "#fb923c" : "#f87171";
 const scoreLabel = s => s >= 85 ? "EXCEPTIONAL" : s >= 65 ? "GOOD" : s >= 45 ? "NEEDS WORK" : s >= 25 ? "FAILING" : "CRITICAL";
 
@@ -204,32 +160,36 @@ export default function SkillLint() {
     new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsText(f); }).then(setContent);
   }, []);
 
-  const evaluate = async () => {
+  const evaluate = async (apiKey) => {
     if (!content.trim()) return;
     setView("loading"); setMsgIdx(0); setError(null);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/evaluate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 4000,
-          system: SYSTEM_PROMPT,
-          messages: [{ role: "user", content: `Evaluate this skill file:\n\n${content}` }]
-        })
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": apiKey || "",
+        },
+        body: JSON.stringify({ content }),
       });
       const data = await res.json();
-      const parsed = JSON.parse(data.content?.[0]?.text?.replace(/```json|```/g, "").trim() || "{}");
+      if (!res.ok) {
+        throw new Error(data.error || "Evaluation failed");
+      }
+      if (!data.overall_score) {
+        throw new Error("Empty response from evaluation. Try again.");
+      }
       const entry = {
         id: Date.now(), filename: file?.name || "pasted",
-        score: parsed.overall_score,
+        score: data.overall_score,
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        result: parsed
+        result: data
       };
-      const h = [entry, ...loadHistory()].slice(0, 20);
+      const h = [entry, ...history].slice(0, 20);
       saveHistory(h); setHistory(h);
-      setResult(parsed); setView("result");
-    } catch {
-      setError("Evaluation failed. Try again.");
+      setResult(data); setView("result");
+    } catch (err) {
+      setError(err.message || "Evaluation failed. Try again.");
       setView("upload");
     }
   };
