@@ -92,6 +92,12 @@ export function Landing({ onStart }) {
   const { isLoaded, isSignedIn } = useUser();
   const { openSignIn } = useClerk();
 
+  const handleStart = () => {
+    if (!isLoaded) return;
+    if (isSignedIn) { onStart(); return; }
+    openSignIn();
+  };
+
   return (
     <div style={{ width: "100%", height: "100vh", overflow: "hidden", background: color.bgLanding, color: color.text1, fontFamily: font.sans, WebkitFontSmoothing: "antialiased" }}>
       <style>{ANIM}</style>
@@ -104,7 +110,7 @@ export function Landing({ onStart }) {
       }}>
         {/* Logo */}
         <div
-          onClick={onStart}
+          onClick={handleStart}
           style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", transition: "opacity 0.15s" }}
           onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
           onMouseLeave={e => e.currentTarget.style.opacity = "1"}
@@ -143,7 +149,7 @@ export function Landing({ onStart }) {
             >SIGN IN</button>
           )}
           <button
-            onClick={onStart}
+            onClick={handleStart}
             style={{
               fontFamily: font.mono, fontSize: "11px", color: color.btnPrimaryText, background: color.btnPrimary,
               border: "none", padding: "8px 20px", borderRadius: "4px",
@@ -199,7 +205,7 @@ export function Landing({ onStart }) {
 
           <div className="sl-cta" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <button
-              onClick={onStart}
+              onClick={handleStart}
               style={{
                 fontFamily: font.mono, fontSize: "12px", color: color.btnPrimaryText, background: color.btnPrimary,
                 border: "none", padding: "14px 32px", borderRadius: "6px",
