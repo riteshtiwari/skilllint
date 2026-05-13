@@ -34,33 +34,33 @@ export function KeyInput({ onKeySet, onKeyClear }) {
   if (saved) return (
     <div style={{
       display: "flex", alignItems: "center", gap: "12px",
-      padding: "12px 16px", background: "#090c09",
+      padding: "14px 16px", background: "#0a0f0a",
       border: "1px solid #1a2a1a", borderRadius: "6px",
       marginBottom: "14px"
     }}>
       <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#4ade80" }}>
         key set
       </span>
-      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#555" }}>
+      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#777" }}>
         sk-ant-...••••
       </span>
       <button onClick={clear} style={{
         marginLeft: "auto", background: "none", border: "none",
-        color: "#555", cursor: "pointer", fontSize: "11px",
-        fontFamily: "'JetBrains Mono',monospace"
+        color: "#777", cursor: "pointer", fontSize: "11px",
+        fontFamily: "'JetBrains Mono',monospace", letterSpacing: ".08em"
       }}>CLEAR</button>
     </div>
   );
 
   return (
     <div id="key-input" style={{
-      padding: "16px", background: "#0a0a0a",
+      padding: "18px", background: "#0c0c0c",
       border: "1px solid #1a1a1a", borderRadius: "6px",
       marginBottom: "14px"
     }}>
       <div style={{
-        fontFamily: "'JetBrains Mono',monospace", fontSize: "9px",
-        color: "#666", letterSpacing: ".1em", marginBottom: "8px"
+        fontFamily: "'JetBrains Mono',monospace", fontSize: "12px",
+        color: "#888", letterSpacing: ".08em", marginBottom: "10px"
       }}>
         ANTHROPIC API KEY — stored in your browser only
       </div>
@@ -73,32 +73,33 @@ export function KeyInput({ onKeySet, onKeyClear }) {
           placeholder="sk-ant-..."
           style={{
             flex: 1, background: "#080808",
-            border: `1px solid ${inputError ? "#f87171" : "#1a1a1a"}`,
-            borderRadius: "4px", padding: "9px 12px", color: "#ccc",
-            fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", outline: "none"
+            border: `1px solid ${inputError ? "#f87171" : "#1e1e1e"}`,
+            borderRadius: "4px", padding: "10px 12px", color: "#ccc",
+            fontFamily: "'JetBrains Mono',monospace", fontSize: "13px", outline: "none"
           }}
         />
         <button
           onClick={save}
           disabled={!val.startsWith("sk-ant-") || val.length <= 20}
           style={{
-            background: val.startsWith("sk-ant-") ? "#e8e8e8" : "#111",
-            color: val.startsWith("sk-ant-") ? "#080808" : "#333",
-            border: "none", borderRadius: "4px", padding: "9px 16px",
+            background: (val.startsWith("sk-ant-") && val.length > 20) ? "#e8e8e8" : "#111",
+            color: (val.startsWith("sk-ant-") && val.length > 20) ? "#080808" : "#444",
+            border: "none", borderRadius: "4px", padding: "10px 18px",
             fontFamily: "'JetBrains Mono',monospace", fontSize: "11px",
-            cursor: val.startsWith("sk-ant-") ? "pointer" : "default"
+            letterSpacing: ".08em",
+            cursor: (val.startsWith("sk-ant-") && val.length > 20) ? "pointer" : "default"
           }}
         >SAVE</button>
       </div>
       {inputError && (
         <div style={{
-          marginTop: "6px", fontFamily: "'JetBrains Mono',monospace",
-          fontSize: "9px", color: "#f87171"
+          marginTop: "8px", fontFamily: "'JetBrains Mono',monospace",
+          fontSize: "11px", color: "#f87171"
         }}>{inputError}</div>
       )}
       <div style={{
-        marginTop: "8px", fontFamily: "'JetBrains Mono',monospace",
-        fontSize: "9px", color: "#444", lineHeight: 1.6
+        marginTop: "10px", fontFamily: "'JetBrains Mono',monospace",
+        fontSize: "12px", color: "#777", lineHeight: 1.6
       }}>
         Get your key at console.anthropic.com. Without a key you get structural analysis only.
       </div>

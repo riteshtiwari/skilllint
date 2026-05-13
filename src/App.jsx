@@ -25,18 +25,28 @@ const saveHistory = (h) => { try { localStorage.setItem(STORAGE_KEY, JSON.string
 
 const LOADING_MSGS = ["Parsing structure...", "Checking trigger precision...", "Scanning for conflicts...", "Measuring token density...", "Evaluating edge cases...", "Running 75 heuristics...", "Finalizing report..."];
 
-const FONTS = <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />;
 const BASE = { minHeight: "100vh", background: "#080808", color: "#e0e0e0", fontFamily: "'DM Sans',sans-serif" };
+
+// Heuristic check — does this text look like a skill file?
+function looksLikeSkillFile(text) {
+  const hasDescriptionOrTrigger =
+    /^description:/im.test(text) ||
+    /^trigger:/im.test(text) ||
+    /^## (description|trigger|when to use|overview)/im.test(text);
+  const hasInstructionalLanguage =
+    /(^|\n)\s*(use |run |call |load |read |write |create |generate |do not |never |always )/im.test(text);
+  return hasDescriptionOrTrigger || hasInstructionalLanguage;
+}
 
 function NavBtn({ label, onClick }) {
   return (
     <button onClick={onClick} style={{
-      background: "none", border: "1px solid #161616", borderRadius: "4px",
-      padding: "6px 14px", cursor: "pointer", color: "#666",
-      fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", letterSpacing: ".08em", transition: "all .15s"
+      background: "none", border: "1px solid #222", borderRadius: "4px",
+      padding: "6px 14px", cursor: "pointer", color: "#777",
+      fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", letterSpacing: ".08em", transition: "all .15s"
     }}
-    onMouseEnter={e => { e.target.style.borderColor = "#333"; e.target.style.color = "#aaa"; }}
-    onMouseLeave={e => { e.target.style.borderColor = "#161616"; e.target.style.color = "#666"; }}>
+    onMouseEnter={e => { e.target.style.borderColor = "#444"; e.target.style.color = "#ccc"; }}
+    onMouseLeave={e => { e.target.style.borderColor = "#222"; e.target.style.color = "#777"; }}>
       {label}
     </button>
   );
@@ -46,12 +56,12 @@ function Nav({ onLogoClick, right }) {
   return (
     <nav style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 48px", height: "56px", borderBottom: "1px solid #0e0e0e",
+      padding: "0 48px", height: "60px", borderBottom: "1px solid #111",
       position: "sticky", top: 0, background: "#080808", zIndex: 10
     }}>
       <button onClick={onLogoClick} style={{ display: "flex", alignItems: "center", gap: "10px", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-        <div style={{ width: "22px", height: "22px", border: "1.5px solid #ccc", display: "grid", placeItems: "center", fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", fontWeight: "700", color: "#ccc" }}>SL</div>
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", letterSpacing: ".08em", color: "#aaa" }}>skilllint<span style={{ color: "#2a2a2a" }}>.dev</span></span>
+        <div style={{ width: "24px", height: "24px", border: "1.5px solid #ccc", display: "grid", placeItems: "center", fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", fontWeight: "700", color: "#ccc" }}>SL</div>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "13px", letterSpacing: ".06em", color: "#aaa" }}>skilllint<span style={{ color: "#444" }}>.dev</span></span>
       </button>
       <div style={{ display: "flex", gap: "10px" }}>{right}</div>
     </nav>
@@ -59,22 +69,22 @@ function Nav({ onLogoClick, right }) {
 }
 
 // ── ScoreArc ──────────────────────────────────────────────────────────────────
-function ScoreArc({ score, size = 148 }) {
-  const r = 54, cx = size / 2, cy = size / 2;
+function ScoreArc({ score, size = 160 }) {
+  const r = 58, cx = size / 2, cy = size / 2;
   const circ = 2 * Math.PI * r;
   const arc = (score / 100) * circ;
   const col = scoreColor(score);
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#111" strokeWidth="7" />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke={col} strokeWidth="7"
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#141414" strokeWidth="8" />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke={col} strokeWidth="8"
         strokeDasharray={`${arc} ${circ}`} strokeLinecap="round"
         transform={`rotate(-90 ${cx} ${cy})`}
         style={{ transition: "stroke-dasharray 1.2s cubic-bezier(.4,0,.2,1)" }} />
-      <text x={cx} y={cy - 8} textAnchor="middle" fill={col}
-        fontSize="28" fontWeight="700" fontFamily="'JetBrains Mono',monospace">{score}</text>
-      <text x={cx} y={cy + 14} textAnchor="middle" fill="#555"
-        fontSize="8" fontFamily="'JetBrains Mono',monospace" letterSpacing="2.5">{scoreLabel(score)}</text>
+      <text x={cx} y={cy - 6} textAnchor="middle" fill={col}
+        fontSize="42" fontWeight="700" fontFamily="'JetBrains Mono',monospace">{score}</text>
+      <text x={cx} y={cy + 18} textAnchor="middle" fill="#777"
+        fontSize="10" fontFamily="'JetBrains Mono',monospace" letterSpacing="2">{scoreLabel(score)}</text>
     </svg>
   );
 }
@@ -86,54 +96,54 @@ function CategoryRow({ cat, data, index }) {
   const hasIssues = data.issues?.length > 0;
 
   return (
-    <div style={{ borderBottom: "1px solid #0e0e0e" }}>
+    <div style={{ borderBottom: "1px solid #111" }}>
       <div onClick={() => hasIssues && setOpen(!open)} style={{
-        display: "grid", gridTemplateColumns: "32px 1fr 160px 28px",
-        alignItems: "center", gap: "16px", padding: "15px 0",
+        display: "grid", gridTemplateColumns: "36px 1fr 180px 28px",
+        alignItems: "center", gap: "16px", padding: "20px 0",
         cursor: hasIssues ? "pointer" : "default"
       }}>
-        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#555" }}>
+        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#666" }}>
           {String(index + 1).padStart(2, "0")}
         </span>
         <div>
-          <div style={{ fontSize: "13px", color: "#d0d0d0", fontWeight: "500", marginBottom: "2px" }}>{cat.label}</div>
-          <div style={{ fontSize: "11px", color: "#888", lineHeight: 1.5 }}>{data.summary}</div>
+          <div style={{ fontSize: "14px", color: "#d8d8d8", fontWeight: "500", marginBottom: "4px" }}>{cat.label}</div>
+          <div style={{ fontSize: "12px", color: "#888", lineHeight: 1.5 }}>{data.summary}</div>
         </div>
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div style={{ flex: 1, height: "2px", background: "#141414", borderRadius: "1px" }}>
-              <div style={{ height: "100%", width: `${data.score}%`, background: col, transition: "width 1s cubic-bezier(.4,0,.2,1)" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ flex: 1, height: "4px", background: "#161616", borderRadius: "2px" }}>
+              <div style={{ height: "100%", width: `${data.score}%`, background: col, borderRadius: "2px", transition: "width 1s cubic-bezier(.4,0,.2,1)" }} />
             </div>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: col, minWidth: "26px", textAlign: "right" }}>{data.score}</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "14px", fontWeight: "600", color: col, minWidth: "28px", textAlign: "right" }}>{data.score}</span>
           </div>
-          <div style={{ marginTop: "4px", fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555", letterSpacing: "0.1em" }}>{cat.weight}% WEIGHT</div>
+          <div style={{ marginTop: "5px", fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#666", letterSpacing: "0.1em" }}>{cat.weight}% WEIGHT</div>
         </div>
-        <div style={{ color: "#555", fontSize: "14px", textAlign: "center", userSelect: "none", transition: "transform .2s", transform: open ? "rotate(45deg)" : "none" }}>
+        <div style={{ color: "#666", fontSize: "16px", textAlign: "center", userSelect: "none", transition: "transform .2s", transform: open ? "rotate(45deg)" : "none" }}>
           {hasIssues ? "+" : "·"}
         </div>
       </div>
 
       {open && hasIssues && (
-        <div style={{ paddingBottom: "16px", paddingLeft: "48px" }}>
+        <div style={{ paddingBottom: "20px", paddingLeft: "52px" }}>
           {data.issues.map((issue, i) => (
             <div key={i} style={{
               display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px",
               marginBottom: "1px",
             }}>
-              <div style={{ padding: "11px 14px", background: "rgba(248,113,113,0.035)" }}>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#f87171", letterSpacing: ".12em", marginBottom: "5px" }}>ISSUE</div>
-                <div style={{ fontSize: "12px", color: "#aaa", lineHeight: 1.65 }}>{issue}</div>
+              <div style={{ padding: "14px 16px", background: "rgba(248,113,113,0.04)" }}>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#f87171", letterSpacing: ".12em", marginBottom: "6px" }}>ISSUE</div>
+                <div style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.65 }}>{issue}</div>
               </div>
-              <div style={{ padding: "11px 14px", background: "rgba(74,222,128,0.03)", borderLeft: "1px solid #0e0e0e" }}>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#4ade80", letterSpacing: ".12em", marginBottom: "5px" }}>FIX</div>
-                <div style={{ fontSize: "12px", color: "#aaa", lineHeight: 1.65 }}>{data.fixes?.[i] || "—"}</div>
+              <div style={{ padding: "14px 16px", background: "rgba(74,222,128,0.03)", borderLeft: "1px solid #111" }}>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#4ade80", letterSpacing: ".12em", marginBottom: "6px" }}>FIX</div>
+                <div style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.65 }}>{data.fixes?.[i] || "—"}</div>
               </div>
             </div>
           ))}
         </div>
       )}
       {open && !hasIssues && (
-        <div style={{ paddingBottom: "14px", paddingLeft: "48px", fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#4ade80" }}>✓ No issues</div>
+        <div style={{ paddingBottom: "16px", paddingLeft: "52px", fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#4ade80" }}>No issues</div>
       )}
     </div>
   );
@@ -151,6 +161,7 @@ export default function SkillLint() {
   const [msgIdx, setMsgIdx] = useState(0);
   const [hasKey, setHasKey] = useState(() => keyManager.isValid());
   const [staticResult, setStaticResult] = useState(null);
+  const [fileWarning, setFileWarning] = useState(null);
   const fileRef = useRef();
   const debounceRef = useRef(null);
 
@@ -164,7 +175,7 @@ export default function SkillLint() {
 
   const handleFile = useCallback((f) => {
     if (!f) return;
-    setFile(f); setError(null);
+    setFile(f); setError(null); setStaticResult(null); setFileWarning(null);
     new Promise((res, rej) => {
       const r = new FileReader();
       r.onload = e => res(e.target.result);
@@ -172,9 +183,18 @@ export default function SkillLint() {
       r.readAsText(f);
     }).then(text => {
       setContent(text);
-      try { setStaticResult(runStaticAnalysis(text)); } catch { /* analysis errors must not block upload */ }
+      if (!looksLikeSkillFile(text)) {
+        setFileWarning("This doesn't look like a skill file. Skill files should have a description field and instructional content.");
+      }
     }).catch(err => setError(err.message));
   }, []);
+
+  const runFreeAnalysis = () => {
+    if (!content.trim()) return;
+    try {
+      setStaticResult(runStaticAnalysis(content));
+    } catch { /* analysis errors must not block the flow */ }
+  };
 
   const evaluate = async (apiKey) => {
     if (!content.trim()) return;
@@ -213,7 +233,7 @@ export default function SkillLint() {
     }
   };
 
-  const reset = () => { setView("upload"); setFile(null); setContent(""); setResult(null); setError(null); setStaticResult(null); };
+  const reset = () => { setView("upload"); setFile(null); setContent(""); setResult(null); setError(null); setStaticResult(null); setFileWarning(null); };
 
   const exportMd = () => {
     if (!result) return;
@@ -241,355 +261,206 @@ export default function SkillLint() {
 
   // ── UPLOAD ──────────────────────────────────────────────────────────────────
   if (view === "upload") return (
-    <div style={{
-      ...BASE,
-      background: "radial-gradient(ellipse 80% 50% at 50% -10%, #0f1a0f 0%, #080808 60%)",
-      position: "relative",
-      overflowX: "hidden",
-    }}>
-      {/* Subtle grid texture — purely decorative, aria-hidden */}
-      <svg
-        aria-hidden="true"
-        style={{ position: "fixed", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0, opacity: 0.18 }}
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" strokeWidth="0.4" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-        {/* Vignette: fade the grid toward edges so it doesn't fight the content */}
-        <rect width="100%" height="100%" fill="url(#vignette)" />
-        <defs>
-          <radialGradient id="vignette" cx="50%" cy="40%" r="60%">
-            <stop offset="0%" stopColor="#080808" stopOpacity="0" />
-            <stop offset="100%" stopColor="#080808" stopOpacity="0.88" />
-          </radialGradient>
-        </defs>
-      </svg>
+    <div style={BASE}>
+      <Nav onLogoClick={reset} right={[
+        history.length > 0 && <NavBtn key="h" label={`HISTORY (${history.length})`} onClick={() => setView("history")} />
+      ]} />
 
-      {FONTS}
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <Nav onLogoClick={reset} right={[
-          history.length > 0 && <NavBtn key="h" label={`HISTORY (${history.length})`} onClick={() => setView("history")} />
-        ]} />
+      <div style={{ maxWidth: "640px", margin: "0 auto", padding: "0 48px" }}>
 
-        {/* ── Hero ─────────────────────────────────────────────────────── */}
-        <div style={{ maxWidth: "860px", margin: "0 auto", padding: "0 48px" }}>
-          <div style={{ padding: "96px 0 64px" }}>
-
-            {/* Badge */}
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              fontFamily: "'JetBrains Mono',monospace", fontSize: "9px",
-              color: "#4ade80",
-              letterSpacing: ".2em",
-              border: "1px solid rgba(74,222,128,0.18)",
-              background: "rgba(74,222,128,0.05)",
-              padding: "6px 14px", borderRadius: "3px", marginBottom: "36px"
-            }}>
-              <span style={{
-                width: "5px", height: "5px",
-                background: "#4ade80",
-                borderRadius: "50%",
-                display: "inline-block",
-                boxShadow: "0 0 6px rgba(74,222,128,0.7)"
-              }} />
-              75 HEURISTICS · 10 CATEGORIES
-            </div>
-
-            {/* Headline */}
-            <h1 style={{
-              fontSize: "clamp(52px, 7vw, 80px)",
-              fontWeight: "300",
-              lineHeight: 1.03,
-              margin: "0 0 28px",
-              letterSpacing: "-.04em",
-              color: "#e8e8e8",
-            }}>
-              Lint your
-              <br />
-              <em style={{
-                fontStyle: "italic",
-                background: "linear-gradient(135deg, #505050 0%, #242424 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}>
-                skill files.
-              </em>
-            </h1>
-
-            {/* Sub-copy */}
-            <p style={{
-              fontSize: "15px",
-              color: "#5a5a5a",
-              fontWeight: "300",
-              maxWidth: "460px",
-              lineHeight: 1.9,
-              margin: 0,
-            }}>
-              Upload a{" "}
-              <code style={{
-                fontFamily: "'JetBrains Mono',monospace",
-                fontSize: "12px",
-                color: "#888",
-                background: "#111",
-                padding: "2px 8px",
-                borderRadius: "3px",
-                border: "1px solid #1e1e1e",
-              }}>.md</code>
-              {" "}skill file. Score it across 75 heuristics. Get specific rewrites for every failing dimension.
-            </p>
+        {/* Hero */}
+        <div style={{ padding: "72px 0 52px" }}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: "8px",
+            fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#4ade80",
+            letterSpacing: ".18em", border: "1px solid #1e2e1e",
+            background: "#0a110a",
+            padding: "5px 12px", borderRadius: "2px", marginBottom: "28px"
+          }}>
+            <span style={{ width: "5px", height: "5px", background: "#4ade80", borderRadius: "50%", display: "inline-block" }} />
+            75 HEURISTICS · 10 CATEGORIES
           </div>
+          <h1 style={{ fontSize: "52px", fontWeight: "300", lineHeight: 1.06, margin: "0 0 20px", letterSpacing: "-.03em", color: "#e8e8e8" }}>
+            Lint your<br /><em style={{ fontStyle: "italic", color: "#444" }}>skill files.</em>
+          </h1>
+          <p style={{ fontSize: "15px", color: "#888", fontWeight: "300", maxWidth: "400px", lineHeight: 1.8, margin: 0 }}>
+            Upload a <code style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#999", background: "#0f0f0f", padding: "2px 7px", borderRadius: "3px", border: "1px solid #1e1e1e" }}>.md</code> skill file. Score it across 75 heuristics. Get specific rewrites for every failing dimension.
+          </p>
         </div>
 
-        {/* ── Action panel ─────────────────────────────────────────────── */}
-        <div style={{ maxWidth: "720px", margin: "0 auto", padding: "0 48px" }}>
-
-          {/* Drop zone */}
-          <div
-            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
-            onClick={() => !file && fileRef.current.click()}
-            style={{
-              border: `1px dashed ${dragOver ? "rgba(74,222,128,0.5)" : file ? "rgba(74,222,128,0.25)" : "rgba(255,255,255,0.08)"}`,
-              borderRadius: "10px",
-              padding: file ? "28px 32px" : "64px 32px",
-              cursor: file ? "default" : "pointer",
-              background: dragOver
-                ? "rgba(74,222,128,0.04)"
-                : file
-                  ? "rgba(74,222,128,0.025)"
-                  : "rgba(255,255,255,0.018)",
-              transition: "all .2s",
-              marginBottom: "12px",
-              boxShadow: dragOver
-                ? "0 0 0 1px rgba(74,222,128,0.2), 0 0 40px rgba(74,222,128,0.06) inset"
-                : file
-                  ? "0 0 0 1px rgba(74,222,128,0.1)"
-                  : "none",
-            }}
-          >
-            <input ref={fileRef} type="file" accept=".md,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
-
-            {file ? (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                  {/* File icon */}
-                  <svg width="28" height="34" viewBox="0 0 28 34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <path d="M4 2h14l8 8v22a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2z" stroke="rgba(74,222,128,0.5)" strokeWidth="1.5" fill="rgba(74,222,128,0.05)" />
-                    <path d="M18 2v8h8" stroke="rgba(74,222,128,0.5)" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M7 17h14M7 22h10" stroke="rgba(74,222,128,0.3)" strokeWidth="1.2" strokeLinecap="round" />
-                  </svg>
-                  <div>
-                    <div style={{
-                      fontFamily: "'JetBrains Mono',monospace",
-                      fontSize: "13px",
-                      color: "#4ade80",
-                      marginBottom: "4px",
-                      fontWeight: "500",
-                    }}>
-                      {file.name}
-                    </div>
-                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#555" }}>
-                      {(file.size / 1024).toFixed(1)} KB · {content.split('\n').length} lines
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={e => { e.stopPropagation(); setFile(null); setContent(""); setStaticResult(null); }}
-                  style={{
-                    background: "none",
-                    border: "1px solid #222",
-                    borderRadius: "4px",
-                    padding: "6px 12px",
-                    cursor: "pointer",
-                    color: "#555",
-                    fontFamily: "'JetBrains Mono',monospace",
-                    fontSize: "9px",
-                    letterSpacing: ".1em",
-                    transition: "all .15s",
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#888"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#222"; e.currentTarget.style.color = "#555"; }}
-                >
-                  CLEAR
-                </button>
-              </div>
-            ) : (
-              <div style={{ textAlign: "center" }}>
-                {/* Upload SVG icon */}
-                <div style={{ marginBottom: "18px", display: "flex", justifyContent: "center" }}>
-                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <rect width="36" height="36" rx="8" fill="rgba(255,255,255,0.03)" />
-                    <path d="M18 24V12M18 12L13 17M18 12L23 17" stroke={dragOver ? "rgba(74,222,128,0.8)" : "#333"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "stroke .2s" }} />
-                    <path d="M11 26h14" stroke={dragOver ? "rgba(74,222,128,0.4)" : "#222"} strokeWidth="1.5" strokeLinecap="round" style={{ transition: "stroke .2s" }} />
-                  </svg>
-                </div>
-                <div style={{
-                  fontFamily: "'JetBrains Mono',monospace",
-                  fontSize: "10px",
-                  color: dragOver ? "#4ade80" : "#444",
-                  letterSpacing: ".14em",
-                  marginBottom: "6px",
-                  transition: "color .2s",
-                }}>
-                  DROP FILE OR CLICK TO BROWSE
-                </div>
-                <div style={{
-                  fontFamily: "'JetBrains Mono',monospace",
-                  fontSize: "9px",
-                  color: "#2e2e2e",
-                  letterSpacing: ".08em",
-                }}>
-                  .md or .txt · skill files only
+        {/* Drop zone */}
+        <div
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+          onClick={() => !file && fileRef.current.click()}
+          style={{
+            border: `1px dashed ${dragOver ? "#4ade80" : file ? "#2a3a2a" : "#1e1e1e"}`,
+            borderRadius: "8px",
+            padding: file ? "28px 32px" : "56px 32px",
+            cursor: file ? "default" : "pointer",
+            background: dragOver ? "#0a120a" : file ? "#0a0f0a" : "#0c0c0c",
+            transition: "all .15s", marginBottom: "12px"
+          }}
+        >
+          <input ref={fileRef} type="file" accept=".md,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
+          {file ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "16px", color: "#4ade80", marginBottom: "6px", fontWeight: "500" }}>{file.name}</div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#888" }}>
+                  {(file.size / 1024).toFixed(1)} KB · {content.split('\n').length} lines
                 </div>
               </div>
-            )}
+              <button onClick={e => { e.stopPropagation(); setFile(null); setContent(""); setStaticResult(null); setFileWarning(null); }} style={{
+                background: "none", border: "1px solid #222", borderRadius: "3px",
+                padding: "6px 12px", cursor: "pointer", color: "#777",
+                fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", letterSpacing: ".08em"
+              }}>CLEAR</button>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: "24px", color: dragOver ? "#4ade80" : "#333", marginBottom: "12px", transition: "color .15s" }}>↑</div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: dragOver ? "#4ade80" : "#888", letterSpacing: ".1em", transition: "color .15s" }}>DROP FILE OR CLICK TO BROWSE</div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#666", marginTop: "6px" }}>.md or .txt</div>
+            </div>
+          )}
+        </div>
+
+        {/* File warning */}
+        {fileWarning && (
+          <div style={{ marginBottom: "12px", padding: "12px 16px", background: "#100e00", border: "1px solid #2a2500", borderRadius: "4px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#fbbf24", marginBottom: "6px", letterSpacing: ".08em" }}>WARNING</div>
+            <div style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.6 }}>{fileWarning}</div>
+            <button onClick={() => setFileWarning(null)} style={{
+              marginTop: "8px", background: "none", border: "none", padding: 0,
+              fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#777",
+              cursor: "pointer", textDecoration: "underline"
+            }}>Proceed anyway</button>
           </div>
+        )}
 
-          {/* Paste textarea */}
-          {!file && (
-            <div style={{ marginBottom: "14px" }}>
-              <div style={{
-                fontFamily: "'JetBrains Mono',monospace",
-                fontSize: "8px",
-                color: "#383838",
-                letterSpacing: ".2em",
-                marginBottom: "8px",
-                textTransform: "uppercase",
-              }}>
-                or paste content
+        {/* Paste textarea — only when no file */}
+        {!file && (
+          <div style={{ marginBottom: "14px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#777", letterSpacing: ".15em", marginBottom: "8px" }}>OR PASTE CONTENT</div>
+            <textarea value={content} onChange={e => { setContent(e.target.value); setStaticResult(null); setFileWarning(null); }}
+              placeholder="Paste skill file content..."
+              style={{
+                width: "100%", height: "130px", background: "#0c0c0c",
+                border: "1px solid #1a1a1a", borderRadius: "6px", padding: "12px 14px",
+                color: "#888", fontSize: "12px", fontFamily: "'JetBrains Mono',monospace",
+                resize: "none", outline: "none", boxSizing: "border-box", lineHeight: 1.7
+              }}
+              onFocus={e => e.target.style.borderColor = "#2a2a2a"}
+              onBlur={e => e.target.style.borderColor = "#1a1a1a"}
+            />
+          </div>
+        )}
+
+        {/* Static analysis result — only shown after explicit click */}
+        {staticResult && (
+          <div style={{ marginBottom: "14px", padding: "20px 22px", background: "#0c0c0c", border: "1px solid #1a1a1a", borderRadius: "6px" }}>
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "18px" }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#777", letterSpacing: ".15em" }}>STRUCTURE SCORE</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "48px", fontWeight: "700", lineHeight: 1, color: scoreColor(staticResult.staticScore) }}>{staticResult.staticScore}</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "18px", color: "#777" }}>/ 100</span>
               </div>
-              <textarea
-                value={content}
-                onChange={e => {
-                  const text = e.target.value;
-                  setContent(text);
-                  clearTimeout(debounceRef.current);
-                  debounceRef.current = setTimeout(() => {
-                    if (text.trim()) try { setStaticResult(runStaticAnalysis(text)); } catch { /* analysis errors silent */ }
-                    else setStaticResult(null);
-                  }, 300);
-                }}
-                placeholder="Paste skill file content..."
-                style={{
-                  width: "100%",
-                  height: "140px",
-                  background: "rgba(255,255,255,0.018)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "8px",
-                  padding: "14px 16px",
-                  color: "#777",
-                  fontSize: "11px",
-                  fontFamily: "'JetBrains Mono',monospace",
-                  resize: "none",
-                  outline: "none",
-                  boxSizing: "border-box",
-                  lineHeight: 1.75,
-                  transition: "border-color .15s",
-                }}
-                onFocus={e => e.target.style.borderColor = "rgba(255,255,255,0.12)"}
-                onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.06)"}
-              />
             </div>
-          )}
-
-          <KeyInput onKeySet={() => setHasKey(true)} onKeyClear={() => setHasKey(false)} />
-
-          {/* Static pre-analysis score */}
-          {staticResult && (
-            <div style={{
-              marginBottom: "12px",
-              padding: "18px 20px",
-              background: "rgba(255,255,255,0.018)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: "8px",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555", letterSpacing: ".18em" }}>STRUCTURE SCORE</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
-                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "20px", fontWeight: "700", color: scoreColor(staticResult.staticScore) }}>{staticResult.staticScore}</span>
-                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#444" }}>/ 100</span>
-                </div>
-              </div>
-              {Object.entries(staticResult.staticCategories).map(([id, data]) => {
-                const cat = CATEGORIES.find(c => c.id === id);
-                return (
-                  <div key={id} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "7px" }}>
-                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#484848", flex: "0 0 150px" }}>{cat?.label || id}</div>
-                    <div style={{ flex: 1, height: "2px", background: "#131313", borderRadius: "1px" }}>
-                      <div style={{ height: "100%", width: `${data.score}%`, background: scoreColor(data.score), borderRadius: "1px" }} />
-                    </div>
-                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: scoreColor(data.score), minWidth: "24px", textAlign: "right" }}>{data.score}</span>
+            {Object.entries(staticResult.staticCategories).map(([id, data]) => {
+              const cat = CATEGORIES.find(c => c.id === id);
+              return (
+                <div key={id} style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#888", flex: "0 0 160px" }}>{cat?.label || id}</div>
+                  <div style={{ flex: 1, height: "4px", background: "#161616", borderRadius: "2px" }}>
+                    <div style={{ height: "100%", width: `${data.score}%`, background: scoreColor(data.score), borderRadius: "2px" }} />
                   </div>
-                );
-              })}
-              <div style={{ marginTop: "12px", fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#383838", letterSpacing: ".1em" }}>
-                {staticResult.heuristicsEvaluated} of 75 heuristics — add key for full evaluation
-              </div>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "14px", fontWeight: "600", color: scoreColor(data.score), minWidth: "28px", textAlign: "right" }}>{data.score}</span>
+                </div>
+              );
+            })}
+            <div style={{ marginTop: "14px", fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#666", letterSpacing: ".08em" }}>
+              {staticResult.heuristicsEvaluated} of 75 heuristics — add key for full evaluation
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Error */}
-          {error && (
-            <div style={{
-              marginBottom: "12px",
-              padding: "12px 16px",
-              background: "rgba(248,113,113,0.04)",
-              border: "1px solid rgba(248,113,113,0.15)",
-              borderRadius: "6px",
-            }}>
-              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#f87171" }}>{error}</span>
-            </div>
-          )}
+        <KeyInput onKeySet={() => setHasKey(true)} onKeyClear={() => setHasKey(false)} />
 
-          {/* CTA */}
-          <button
-            disabled={!content.trim()}
-            onClick={() => {
-              if (!hasKey) {
-                document.getElementById("key-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
-                return;
-              }
-              evaluate(keyManager.get());
-            }}
-            style={{
-              width: "100%",
-              padding: "17px",
-              background: content.trim()
-                ? "linear-gradient(135deg, #d4d4d4 0%, #f0f0f0 50%, #d4d4d4 100%)"
-                : "#0c0c0c",
-              color: content.trim() ? "#0a0a0a" : "#272727",
-              border: content.trim() ? "none" : "1px solid #161616",
-              borderRadius: "8px",
-              fontFamily: "'JetBrains Mono',monospace",
-              fontSize: "11px",
-              letterSpacing: ".12em",
-              fontWeight: "700",
-              cursor: content.trim() ? "pointer" : "default",
-              transition: "all .2s",
-              marginBottom: "80px",
-              boxShadow: content.trim()
-                ? "0 1px 0 rgba(255,255,255,0.1) inset, 0 4px 24px rgba(0,0,0,0.4)"
-                : "none",
-            }}
-            onMouseEnter={e => {
-              if (!content.trim()) return;
-              e.currentTarget.style.background = "linear-gradient(135deg, #e8e8e8 0%, #ffffff 50%, #e8e8e8 100%)";
-              e.currentTarget.style.boxShadow = "0 1px 0 rgba(255,255,255,0.15) inset, 0 6px 32px rgba(0,0,0,0.5)";
-            }}
-            onMouseLeave={e => {
-              if (!content.trim()) return;
-              e.currentTarget.style.background = "linear-gradient(135deg, #d4d4d4 0%, #f0f0f0 50%, #d4d4d4 100%)";
-              e.currentTarget.style.boxShadow = "0 1px 0 rgba(255,255,255,0.1) inset, 0 4px 24px rgba(0,0,0,0.4)";
-            }}
-          >
-            {hasKey ? "RUN EVALUATION" : "ADD KEY TO EVALUATE"}
-          </button>
+        {error && (
+          <div style={{ marginBottom: "12px", padding: "12px 16px", background: "#100808", border: "1px solid #2a0f0f", borderRadius: "4px" }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#f87171" }}>{error}</span>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "80px" }}>
+          {hasKey ? (
+            // Key set: single primary CTA for full evaluation
+            <button
+              disabled={!content.trim()}
+              onClick={() => {
+                if (!keyManager.isValid()) {
+                  setHasKey(false);
+                  document.getElementById("key-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  return;
+                }
+                evaluate(keyManager.get());
+              }}
+              style={{
+                width: "100%", padding: "16px",
+                background: content.trim() ? "#e8e8e8" : "#0e0e0e",
+                color: content.trim() ? "#080808" : "#333",
+                border: content.trim() ? "none" : "1px solid #1a1a1a",
+                borderRadius: "6px",
+                fontFamily: "'JetBrains Mono',monospace", fontSize: "12px",
+                letterSpacing: ".1em", fontWeight: "700",
+                cursor: content.trim() ? "pointer" : "default",
+                transition: "background .15s"
+              }}
+              onMouseEnter={e => content.trim() && (e.currentTarget.style.background = "#fff")}
+              onMouseLeave={e => content.trim() && (e.currentTarget.style.background = "#e8e8e8")}
+            >RUN FULL EVALUATION — 75 HEURISTICS</button>
+          ) : (
+            // No key: two buttons
+            <>
+              <button
+                disabled={!content.trim()}
+                onClick={runFreeAnalysis}
+                style={{
+                  width: "100%", padding: "16px",
+                  background: content.trim() ? "#e8e8e8" : "#0e0e0e",
+                  color: content.trim() ? "#080808" : "#333",
+                  border: content.trim() ? "none" : "1px solid #1a1a1a",
+                  borderRadius: "6px",
+                  fontFamily: "'JetBrains Mono',monospace", fontSize: "12px",
+                  letterSpacing: ".1em", fontWeight: "700",
+                  cursor: content.trim() ? "pointer" : "default",
+                  transition: "background .15s"
+                }}
+                onMouseEnter={e => content.trim() && (e.currentTarget.style.background = "#fff")}
+                onMouseLeave={e => content.trim() && (e.currentTarget.style.background = "#e8e8e8")}
+              >RUN FREE ANALYSIS — 22 HEURISTICS</button>
+              <button
+                disabled={!content.trim()}
+                onClick={() => document.getElementById("key-input")?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                style={{
+                  width: "100%", padding: "15px",
+                  background: "none",
+                  color: content.trim() ? "#888" : "#333",
+                  border: `1px solid ${content.trim() ? "#222" : "#141414"}`,
+                  borderRadius: "6px",
+                  fontFamily: "'JetBrains Mono',monospace", fontSize: "12px",
+                  letterSpacing: ".1em", fontWeight: "600",
+                  cursor: content.trim() ? "pointer" : "default",
+                  transition: "all .15s"
+                }}
+                onMouseEnter={e => content.trim() && (e.currentTarget.style.borderColor = "#444", e.currentTarget.style.color = "#ccc")}
+                onMouseLeave={e => content.trim() && (e.currentTarget.style.borderColor = "#222", e.currentTarget.style.color = "#888")}
+              >RUN FULL EVALUATION — ADD KEY FIRST</button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -598,7 +469,6 @@ export default function SkillLint() {
   // ── LOADING ─────────────────────────────────────────────────────────────────
   if (view === "loading") return (
     <div style={{ ...BASE, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "28px" }}>
-      {FONTS}
       <style>{`@keyframes bar { from { background:#111; transform:scaleY(.5); } to { background:#3a3a3a; transform:scaleY(1); } }`}</style>
       <div style={{ display: "flex", gap: "3px", alignItems: "flex-end", height: "36px" }}>
         {CATEGORIES.map((_, i) => (
@@ -606,8 +476,8 @@ export default function SkillLint() {
         ))}
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#888", letterSpacing: ".06em", minHeight: "18px" }}>{LOADING_MSGS[msgIdx]}</div>
-        <div style={{ marginTop: "6px", fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#555" }}>{file?.name || "pasted content"}</div>
+        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "13px", color: "#888", letterSpacing: ".06em", minHeight: "20px" }}>{LOADING_MSGS[msgIdx]}</div>
+        <div style={{ marginTop: "8px", fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#666" }}>{file?.name || "pasted content"}</div>
       </div>
     </div>
   );
@@ -618,7 +488,6 @@ export default function SkillLint() {
     const stats = result.file_stats || {};
     return (
       <div style={BASE}>
-        {FONTS}
         <Nav onLogoClick={reset} right={[
           <NavBtn key="exp" label="EXPORT .MD" onClick={exportMd} />,
           <NavBtn key="hist" label="HISTORY" onClick={() => setView("history")} />,
@@ -627,10 +496,10 @@ export default function SkillLint() {
         <div style={{ maxWidth: "760px", margin: "0 auto", padding: "0 48px 80px" }}>
 
           {/* Hero */}
-          <div style={{ display: "grid", gridTemplateColumns: "148px 1fr", gap: "40px", alignItems: "center", padding: "52px 0 40px", borderBottom: "1px solid #0e0e0e" }}>
-            <ScoreArc score={result.overall_score} size={148} />
+          <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: "40px", alignItems: "center", padding: "52px 0 40px", borderBottom: "1px solid #111" }}>
+            <ScoreArc score={result.overall_score} size={160} />
             <div>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#666", letterSpacing: ".15em", marginBottom: "6px" }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "13px", color: "#888", marginBottom: "8px" }}>
                 {file?.name || "pasted content"}
               </div>
               <div style={{ fontSize: "17px", fontWeight: "300", lineHeight: 1.6, color: "#ccc", marginBottom: "20px", maxWidth: "440px" }}>
@@ -640,13 +509,13 @@ export default function SkillLint() {
                 {[
                   { label: "~tokens", value: result.token_estimate || "?" },
                   { label: "lines", value: stats.lines || "?" },
-                  { label: "examples", value: stats.has_examples ? "✓" : "✗", ok: stats.has_examples },
-                  { label: "output spec", value: stats.has_output_spec ? "✓" : "✗", ok: stats.has_output_spec },
-                  { label: "neg. triggers", value: stats.has_negative_triggers ? "✓" : "✗", ok: stats.has_negative_triggers },
+                  { label: "examples", value: stats.has_examples ? "yes" : "no", ok: stats.has_examples },
+                  { label: "output spec", value: stats.has_output_spec ? "yes" : "no", ok: stats.has_output_spec },
+                  { label: "neg. triggers", value: stats.has_negative_triggers ? "yes" : "no", ok: stats.has_negative_triggers },
                 ].map(s => (
-                  <div key={s.label} style={{ padding: "8px 12px", background: "#0b0b0b", border: "1px solid #141414", borderRadius: "5px" }}>
-                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#666", letterSpacing: ".1em", marginBottom: "3px" }}>{s.label.toUpperCase()}</div>
-                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "13px", fontWeight: "600", color: s.ok === undefined ? "#666" : s.ok ? "#4ade80" : "#f87171" }}>{s.value}</div>
+                  <div key={s.label} style={{ padding: "10px 14px", background: "#0c0c0c", border: "1px solid #161616", borderRadius: "5px" }}>
+                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#888", letterSpacing: ".1em", marginBottom: "4px" }}>{s.label.toUpperCase()}</div>
+                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "14px", fontWeight: "600", color: s.ok === undefined ? "#999" : s.ok ? "#4ade80" : "#f87171" }}>{s.value}</div>
                   </div>
                 ))}
               </div>
@@ -654,23 +523,23 @@ export default function SkillLint() {
           </div>
 
           {/* Top fix */}
-          <div style={{ margin: "28px 0", padding: "18px 22px", background: "#0b0b09", border: "1px solid #1c1c14", borderLeft: `3px solid ${col}`, borderRadius: "6px" }}>
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: col, letterSpacing: ".15em", marginBottom: "9px" }}>TOP PRIORITY FIX</div>
-            <div style={{ fontSize: "14px", color: "#bbb", lineHeight: 1.8 }}>{result.top_priority_fix}</div>
+          <div style={{ margin: "28px 0", padding: "20px 24px", background: "#0c0c0a", border: "1px solid #1e1e14", borderLeft: `3px solid ${col}`, borderRadius: "6px" }}>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: col, letterSpacing: ".15em", marginBottom: "10px" }}>TOP PRIORITY FIX</div>
+            <div style={{ fontSize: "15px", color: "#bbb", lineHeight: 1.8 }}>{result.top_priority_fix}</div>
           </div>
 
           {/* Rewritten trigger */}
           {result.rewritten_trigger && (
-            <div style={{ marginBottom: "28px", padding: "18px 22px", background: "#090c09", border: "1px solid #141e14", borderLeft: "3px solid #4ade80", borderRadius: "6px" }}>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#4ade80", letterSpacing: ".15em", marginBottom: "9px" }}>REWRITTEN TRIGGER</div>
-              <div style={{ fontSize: "11px", color: "#aaa", lineHeight: 1.85, fontFamily: "'JetBrains Mono',monospace", whiteSpace: "pre-wrap" }}>{result.rewritten_trigger}</div>
+            <div style={{ marginBottom: "28px", padding: "20px 24px", background: "#0a0c0a", border: "1px solid #141e14", borderLeft: "3px solid #4ade80", borderRadius: "6px" }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#4ade80", letterSpacing: ".15em", marginBottom: "10px" }}>REWRITTEN TRIGGER</div>
+              <div style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.85, fontFamily: "'JetBrains Mono',monospace", whiteSpace: "pre-wrap" }}>{result.rewritten_trigger}</div>
             </div>
           )}
 
           {/* Breakdown header */}
-          <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 160px 28px", gap: "16px", padding: "10px 0 10px", borderBottom: "1px solid #0e0e0e", marginBottom: "0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 180px 28px", gap: "16px", padding: "12px 0", borderBottom: "1px solid #111" }}>
             {["#", "CATEGORY", "SCORE", ""].map((h, i) => (
-              <span key={i} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555", letterSpacing: ".12em" }}>{h}</span>
+              <span key={i} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#777", letterSpacing: ".12em" }}>{h}</span>
             ))}
           </div>
 
@@ -687,24 +556,23 @@ export default function SkillLint() {
   // ── HISTORY ─────────────────────────────────────────────────────────────────
   if (view === "history") return (
     <div style={BASE}>
-      {FONTS}
       <Nav onLogoClick={reset} right={[<NavBtn key="b" label="← BACK" onClick={() => setView("upload")} />]} />
       <div style={{ maxWidth: "640px", margin: "0 auto", padding: "52px 48px" }}>
-        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#666", letterSpacing: ".2em", marginBottom: "28px" }}>EVALUATION HISTORY</div>
+        <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#777", letterSpacing: ".2em", marginBottom: "32px" }}>EVALUATION HISTORY</div>
         {history.length === 0 ? (
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#555" }}>No evaluations yet.</div>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "13px", color: "#666" }}>No evaluations yet.</div>
         ) : history.map(entry => (
           <div key={entry.id} onClick={() => { setResult(entry.result); setFile({ name: entry.filename }); setView("result"); }}
-            style={{ display: "grid", gridTemplateColumns: "52px 1fr auto", alignItems: "center", gap: "14px", padding: "14px 0", borderBottom: "1px solid #0e0e0e", cursor: "pointer", transition: "opacity .15s" }}
+            style={{ display: "grid", gridTemplateColumns: "56px 1fr auto", alignItems: "center", gap: "16px", padding: "16px 0", borderBottom: "1px solid #111", cursor: "pointer", transition: "opacity .15s" }}
             onMouseEnter={e => e.currentTarget.style.opacity = ".6"}
             onMouseLeave={e => e.currentTarget.style.opacity = "1"}
           >
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "20px", fontWeight: "700", color: scoreColor(entry.score) }}>{entry.score}</div>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "22px", fontWeight: "700", color: scoreColor(entry.score) }}>{entry.score}</div>
             <div>
-              <div style={{ fontSize: "13px", color: "#bbb", marginBottom: "2px" }}>{entry.filename}</div>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#666" }}>{entry.date}</div>
+              <div style={{ fontSize: "14px", color: "#bbb", marginBottom: "3px" }}>{entry.filename}</div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#777" }}>{entry.date}</div>
             </div>
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555", letterSpacing: ".1em" }}>LOAD →</div>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#666", letterSpacing: ".1em" }}>LOAD →</div>
           </div>
         ))}
       </div>
