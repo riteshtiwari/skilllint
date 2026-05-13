@@ -80,7 +80,7 @@ export function KeyInput({ onKeySet, onKeyClear }) {
         />
         <button
           onClick={save}
-          disabled={!val.startsWith("sk-ant-")}
+          disabled={!val.startsWith("sk-ant-") || val.length <= 20}
           style={{
             background: val.startsWith("sk-ant-") ? "#e8e8e8" : "#111",
             color: val.startsWith("sk-ant-") ? "#080808" : "#333",

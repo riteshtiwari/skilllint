@@ -55,14 +55,18 @@ function checkStructuralIntegrity(text) {
     score -= 10;
   }
 
-  // Empty sections — heading immediately followed by another heading
+  // Empty sections — heading with no content before the next heading (blank lines don't count)
   for (let i = 0; i < lineArr.length - 1; i++) {
-    if (/^#{1,6}\s/.test(lineArr[i]) && /^#{1,6}\s/.test(lineArr[i + 1])) {
-      const heading = lineArr[i].replace(/^#+\s*/, "");
-      issues.push(`Section "${heading}" has no content`);
-      fixes.push("Either add content to this section or remove the heading");
-      score -= 10;
-      break;
+    if (/^#{1,6}\s/.test(lineArr[i])) {
+      let j = i + 1;
+      while (j < lineArr.length && lineArr[j].trim() === "") j++;
+      if (j < lineArr.length && /^#{1,6}\s/.test(lineArr[j])) {
+        const heading = lineArr[i].replace(/^#+\s*/, "");
+        issues.push(`Section "${heading}" has no content`);
+        fixes.push("Either add content to this section or remove the heading");
+        score -= 10;
+        break;
+      }
     }
   }
 
@@ -278,8 +282,9 @@ export function runStaticAnalysis(text) {
     has_output_spec:      /output|returns|produces|saves to|writes to/i.test(text),
   };
 
-  // Weights aligned to LLM evaluation weights for the five categories we check
-  const staticScore = Math.round(
+  // Weights aligned to LLM evaluation weights for the five categories we check.
+  // Divide first, then round — applying Math.round before division amplifies rounding error by ~1.89x.
+  const staticScore = (
     structural.score    * 0.08 +
     tokens.score        * 0.10 +
     discoverability.score * 0.15 +

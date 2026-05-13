@@ -1,37 +1,61 @@
 export const config = { runtime: "edge" };
 
-import { SYSTEM_PROMPT } from "../src/constants/prompts.js";
+import { SYSTEM_PROMPT } from "./lib/prompts.js";
+
+const ALLOWED_ORIGINS = new Set([
+  "https://skilllint.dev",
+  "http://localhost:5173",
+  "http://localhost:4173",
+]);
+
+function getCorsHeaders(req) {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "https://skilllint.dev",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, X-Api-Key",
+  };
+}
+
+function json(body, status, cors) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...cors },
+  });
+}
 
 export default async function handler(req) {
+  const cors = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 200 });
+    return new Response(null, { status: 204, headers: cors });
   }
 
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+    return json({ error: "Method not allowed" }, 405, cors);
   }
 
   const userKey = req.headers.get("X-Api-Key");
 
   if (!userKey || !userKey.startsWith("sk-ant-")) {
-    return new Response(JSON.stringify({ error: "Valid Anthropic API key required" }), { status: 401 });
+    return json({ error: "Valid Anthropic API key required" }, 401, cors);
   }
 
   let body;
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 });
+    return json({ error: "Invalid JSON body" }, 400, cors);
   }
 
   const { content } = body;
 
   if (!content?.trim()) {
-    return new Response(JSON.stringify({ error: "No content provided" }), { status: 400 });
+    return json({ error: "No content provided" }, 400, cors);
   }
 
   if (content.length > 50000) {
-    return new Response(JSON.stringify({ error: "File too large. Maximum 50,000 characters." }), { status: 400 });
+    return json({ error: "File too large. Maximum 50,000 characters." }, 400, cors);
   }
 
   try {
@@ -53,15 +77,15 @@ export default async function handler(req) {
     if (!response.ok) {
       const err = await response.json();
       if (err.error?.type === "authentication_error") {
-        return new Response(JSON.stringify({ error: "Invalid API key. Check your key at console.anthropic.com" }), { status: 401 });
+        return json({ error: "Invalid API key. Check your key at console.anthropic.com" }, 401, cors);
       }
       if (err.error?.type === "rate_limit_error") {
-        return new Response(JSON.stringify({ error: "Rate limit hit. Wait a moment and try again." }), { status: 429 });
+        return json({ error: "Rate limit hit. Wait a moment and try again." }, 429, cors);
       }
       if (err.error?.type === "overloaded_error") {
-        return new Response(JSON.stringify({ error: "Anthropic API is overloaded. Try again in a few seconds." }), { status: 503 });
+        return json({ error: "Anthropic API is overloaded. Try again in a few seconds." }, 503, cors);
       }
-      return new Response(JSON.stringify({ error: "Anthropic API error", detail: err.error?.message }), { status: 500 });
+      return json({ error: "Anthropic API error", detail: err.error?.message }, 500, cors);
     }
 
     const data = await response.json();
@@ -69,21 +93,21 @@ export default async function handler(req) {
     const clean = rawText.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim();
 
     if (!clean) {
-      return new Response(JSON.stringify({ error: "Empty response from evaluation. Try again." }), { status: 500 });
+      return json({ error: "Empty response from evaluation. Try again." }, 500, cors);
     }
 
     let parsed;
     try {
       parsed = JSON.parse(clean);
     } catch {
-      return new Response(JSON.stringify({ error: "Failed to parse evaluation response. Try again." }), { status: 500 });
+      return json({ error: "Failed to parse evaluation response. Try again." }, 500, cors);
     }
 
     return new Response(JSON.stringify(parsed), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...cors },
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: "Evaluation failed", detail: err.message }), { status: 500 });
+    return json({ error: "Evaluation failed", detail: err.message }, 500, cors);
   }
 }

@@ -160,6 +160,8 @@ export default function SkillLint() {
     return () => clearInterval(t);
   }, [view]);
 
+  useEffect(() => () => clearTimeout(debounceRef.current), []);
+
   const handleFile = useCallback((f) => {
     if (!f) return;
     setFile(f); setError(null);
@@ -190,7 +192,7 @@ export default function SkillLint() {
       if (!res.ok) {
         throw new Error(data.error || "Evaluation failed");
       }
-      if (!data.overall_score) {
+      if (data.overall_score == null) {
         throw new Error("Empty response from evaluation. Try again.");
       }
       const entry = {
@@ -199,8 +201,11 @@ export default function SkillLint() {
         date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         result: data
       };
-      const h = [entry, ...history].slice(0, 20);
-      saveHistory(h); setHistory(h);
+      setHistory(prev => {
+        const h = [entry, ...prev].slice(0, 20);
+        saveHistory(h);
+        return h;
+      });
       setResult(data); setView("result");
     } catch (err) {
       setError(err.message || "Evaluation failed. Try again.");
@@ -230,6 +235,7 @@ export default function SkillLint() {
       download: `skilllint-${(file?.name || "report").replace(".md", "")}-report.md`
     });
     a.click();
+    URL.revokeObjectURL(a.href);
   };
 
 
@@ -281,7 +287,7 @@ export default function SkillLint() {
                   {(file.size / 1024).toFixed(1)} KB · {content.split('\n').length} lines
                 </div>
               </div>
-              <button onClick={e => { e.stopPropagation(); setFile(null); setContent(""); }} style={{
+              <button onClick={e => { e.stopPropagation(); setFile(null); setContent(""); setStaticResult(null); }} style={{
                 background: "none", border: "1px solid #1a1a1a", borderRadius: "3px",
                 padding: "5px 10px", cursor: "pointer", color: "#666",
                 fontFamily: "'JetBrains Mono',monospace", fontSize: "9px"
