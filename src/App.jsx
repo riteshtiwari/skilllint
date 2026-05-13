@@ -1,4 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { keyManager } from "./lib/keyManager";
+import { KeyInput } from "./components/KeyInput";
+import { runStaticAnalysis } from "./lib/staticAnalysis";
 
 const CATEGORIES = [
   { id: "discoverability",       label: "Discoverability",        weight: 15 },
@@ -146,7 +149,10 @@ export default function SkillLint() {
   const [dragOver, setDragOver] = useState(false);
   const [history, setHistory] = useState(() => loadHistory());
   const [msgIdx, setMsgIdx] = useState(0);
+  const [hasKey, setHasKey] = useState(() => keyManager.isValid());
+  const [staticResult, setStaticResult] = useState(null);
   const fileRef = useRef();
+  const debounceRef = useRef(null);
 
   useEffect(() => {
     if (view !== "loading") return;
@@ -157,7 +163,15 @@ export default function SkillLint() {
   const handleFile = useCallback((f) => {
     if (!f) return;
     setFile(f); setError(null);
-    new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsText(f); }).then(setContent);
+    new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = e => res(e.target.result);
+      r.onerror = () => rej(new Error("Failed to read file"));
+      r.readAsText(f);
+    }).then(text => {
+      setContent(text);
+      try { setStaticResult(runStaticAnalysis(text)); } catch { /* analysis errors must not block upload */ }
+    }).catch(err => setError(err.message));
   }, []);
 
   const evaluate = async (apiKey) => {
@@ -194,7 +208,7 @@ export default function SkillLint() {
     }
   };
 
-  const reset = () => { setView("upload"); setFile(null); setContent(""); setResult(null); setError(null); };
+  const reset = () => { setView("upload"); setFile(null); setContent(""); setResult(null); setError(null); setStaticResult(null); };
 
   const exportMd = () => {
     if (!result) return;
@@ -284,7 +298,15 @@ export default function SkillLint() {
         {!file && (
           <div style={{ marginBottom: "16px" }}>
             <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555", letterSpacing: ".15em", marginBottom: "6px" }}>OR PASTE CONTENT</div>
-            <textarea value={content} onChange={e => setContent(e.target.value)}
+            <textarea value={content} onChange={e => {
+              const text = e.target.value;
+              setContent(text);
+              clearTimeout(debounceRef.current);
+              debounceRef.current = setTimeout(() => {
+                if (text.trim()) try { setStaticResult(runStaticAnalysis(text)); } catch { /* analysis errors silent */ }
+                else setStaticResult(null);
+              }, 300);
+            }}
               placeholder="Paste skill file content..."
               style={{
                 width: "100%", height: "130px", background: "#090909",
@@ -298,25 +320,63 @@ export default function SkillLint() {
           </div>
         )}
 
+        <KeyInput onKeySet={() => setHasKey(true)} onKeyClear={() => setHasKey(false)} />
+
+        {staticResult && (
+          <div style={{ marginBottom: "14px", padding: "16px 18px", background: "#090909", border: "1px solid #141414", borderRadius: "6px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#666", letterSpacing: ".15em" }}>STRUCTURE SCORE</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "18px", fontWeight: "700", color: scoreColor(staticResult.staticScore) }}>{staticResult.staticScore}</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555" }}>/ 100</span>
+              </div>
+            </div>
+            {Object.entries(staticResult.staticCategories).map(([id, data]) => {
+              const cat = CATEGORIES.find(c => c.id === id);
+              return (
+                <div key={id} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#555", flex: "0 0 140px" }}>{cat?.label || id}</div>
+                  <div style={{ flex: 1, height: "2px", background: "#141414", borderRadius: "1px" }}>
+                    <div style={{ height: "100%", width: `${data.score}%`, background: scoreColor(data.score) }} />
+                  </div>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: scoreColor(data.score), minWidth: "24px", textAlign: "right" }}>{data.score}</span>
+                </div>
+              );
+            })}
+            <div style={{ marginTop: "10px", fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#444", letterSpacing: ".1em" }}>
+              {staticResult.heuristicsEvaluated} of 75 heuristics · add key for full evaluation
+            </div>
+          </div>
+        )}
+
         {error && (
           <div style={{ marginBottom: "14px", padding: "10px 14px", background: "#100808", border: "1px solid #2a0f0f", borderRadius: "4px" }}>
             <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#f87171" }}>{error}</span>
           </div>
         )}
 
-        <button onClick={evaluate} disabled={!content.trim()} style={{
-          width: "100%", padding: "15px",
-          background: content.trim() ? "#e8e8e8" : "#0e0e0e",
-          color: content.trim() ? "#080808" : "#222",
-          border: "none", borderRadius: "6px",
-          fontFamily: "'JetBrains Mono',monospace", fontSize: "11px",
-          letterSpacing: ".1em", fontWeight: "600",
-          cursor: content.trim() ? "pointer" : "default",
-          transition: "all .2s", marginBottom: "72px"
-        }}
-        onMouseEnter={e => content.trim() && (e.currentTarget.style.background = "#fff")}
-        onMouseLeave={e => content.trim() && (e.currentTarget.style.background = "#e8e8e8")}
-        >RUN EVALUATION →</button>
+        <button
+          disabled={!content.trim()}
+          onClick={() => {
+            if (!hasKey) {
+              document.getElementById("key-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              return;
+            }
+            evaluate(keyManager.get());
+          }}
+          style={{
+            width: "100%", padding: "15px",
+            background: content.trim() ? "#e8e8e8" : "#0e0e0e",
+            color: content.trim() ? "#080808" : "#222",
+            border: "none", borderRadius: "6px",
+            fontFamily: "'JetBrains Mono',monospace", fontSize: "11px",
+            letterSpacing: ".1em", fontWeight: "600",
+            cursor: content.trim() ? "pointer" : "default",
+            transition: "all .2s", marginBottom: "72px"
+          }}
+          onMouseEnter={e => content.trim() && (e.currentTarget.style.background = "#fff")}
+          onMouseLeave={e => content.trim() && (e.currentTarget.style.background = "#e8e8e8")}
+        >{hasKey ? "RUN EVALUATION →" : "ADD KEY TO EVALUATE →"}</button>
       </div>
     </div>
   );
