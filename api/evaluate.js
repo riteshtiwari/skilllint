@@ -68,7 +68,7 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 4000,
+        max_tokens: 8000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: `Evaluate this skill file:\n\n<skill_file>\n${content}\n</skill_file>` }],
       }),

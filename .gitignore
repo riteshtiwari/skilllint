@@ -16,6 +16,7 @@ dist-ssr
 .env.*.local
 .vercel/
 PROGRESS.md
+skilltest.md
 
 # Editor directories and files
 .vscode/*

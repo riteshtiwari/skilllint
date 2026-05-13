@@ -1,0 +1,261 @@
+import { useState } from "react";
+import { useUser, useClerk, UserButton } from '@clerk/clerk-react';
+import { color, font, border } from "../tokens.js";
+
+const ANIM = `
+@keyframes sl-slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sl-eyebrow { opacity: 0; animation: sl-slideUp 0.6s 0.1s ease forwards; }
+.sl-h1      { opacity: 0; animation: sl-slideUp 0.7s 0.2s ease forwards; }
+.sl-sub     { opacity: 0; animation: sl-slideUp 0.6s 0.35s ease forwards; }
+.sl-cta     { opacity: 0; animation: sl-slideUp 0.6s 0.5s ease forwards; }
+.sl-stats   { opacity: 0; animation: sl-slideUp 0.6s 0.65s ease forwards; }
+`;
+
+// Mock report data — decorative only, colors are intentional demo values
+const CATS = [
+  { name: "Discoverability",     pct: 42, score: "42", barColor: "#3a3a3a", scoreColor: "#666",    underline: "#7a3535" },
+  { name: "Instruction Quality", pct: 58, score: "58", barColor: "#484848", scoreColor: "#777",    underline: "#7a5c1a" },
+  { name: "Scope & Boundaries",  pct: 71, score: "71", barColor: "#585858", scoreColor: "#888",    underline: "#7a5c1a" },
+  { name: "Token Economics",     pct: 65, score: "65", barColor: "#525252", scoreColor: "#828282", underline: "#7a5c1a" },
+  { name: "Robustness",          pct: 38, score: "38", barColor: "#363636", scoreColor: "#606060", underline: "#7a3535" },
+  { name: "Examples & Evidence", pct: 20, score: "20", barColor: "#2a2a2a", scoreColor: "#555",    underline: "#7a3535" },
+  { name: "Structural Integrity",pct: 88, score: "88", barColor: "#787878", scoreColor: "#aaa",    underline: null     },
+  { name: "Maintainability",     pct: 74, score: "74", barColor: "#606060", scoreColor: "#909090", underline: "#7a5c1a" },
+];
+
+function CatRow({ cat, last }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "grid", gridTemplateColumns: "158px 1fr 32px",
+        alignItems: "center", gap: "16px",
+        padding: "9px 6px",
+        borderBottom: last ? "none" : border.subtle,
+        borderRadius: "3px",
+        background: hovered ? color.surface5 : "transparent",
+        cursor: "default",
+        transition: "background 0.12s",
+      }}
+    >
+      <div style={{
+        fontFamily: font.mono, fontSize: "11px",
+        color: hovered ? color.text3 : color.text8,
+        transition: "color 0.12s",
+      }}>{cat.name}</div>
+      <div style={{ height: "1px", background: color.surface7, borderRadius: "1px", position: "relative" }}>
+        <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${cat.pct}%`, background: cat.barColor, borderRadius: "1px" }} />
+      </div>
+      <div style={{ fontFamily: font.mono, fontSize: "11px", fontWeight: "500", textAlign: "right", color: cat.scoreColor }}>
+        {cat.underline
+          ? <span style={{ borderBottom: `1.5px solid ${cat.underline}`, paddingBottom: "1px" }}>{cat.score}</span>
+          : cat.score}
+      </div>
+    </div>
+  );
+}
+
+export function Landing({ onStart }) {
+  const { isLoaded, isSignedIn } = useUser();
+  const { openSignIn } = useClerk();
+
+  return (
+    <div style={{ width: "100%", height: "100vh", overflow: "hidden", background: color.bgLanding, color: color.text1, fontFamily: font.sans, WebkitFontSmoothing: "antialiased" }}>
+      <style>{ANIM}</style>
+
+      {/* Nav */}
+      <nav style={{
+        position: "fixed", top: 0, left: 0, right: 0, height: "56px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 48px", borderBottom: border.strong, background: color.bgLanding, zIndex: 100
+      }}>
+        {/* Logo */}
+        <div
+          onClick={onStart}
+          style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", transition: "opacity 0.15s" }}
+          onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+          onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+        >
+          <div style={{
+            width: "26px", height: "26px", border: `1.5px solid ${color.brand}`,
+            display: "grid", placeItems: "center",
+            fontFamily: font.mono, fontSize: "9px", fontWeight: "500", color: color.brand
+          }}>SL</div>
+          <span style={{ fontFamily: font.mono, fontSize: "13px", color: color.text4, letterSpacing: "0.04em" }}>
+            skilllint<span style={{ color: color.textA }}>.dev</span>
+          </span>
+        </div>
+
+        {/* Nav right */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {isLoaded && isSignedIn ? (
+            <UserButton appearance={{
+              elements: { avatarBox: { width: "28px", height: "28px", borderRadius: "4px" } }
+            }} />
+          ) : (
+            <button
+              disabled={!isLoaded}
+              onClick={() => openSignIn()}
+              style={{
+                fontFamily: font.mono, fontSize: "11px",
+                color: isLoaded ? color.text8 : color.textC,
+                background: "none",
+                border: `1px solid ${isLoaded ? color.surface8 : color.surface6}`,
+                padding: "7px 18px", borderRadius: "4px",
+                cursor: isLoaded ? "pointer" : "default",
+                letterSpacing: "0.06em", transition: "all 0.15s"
+              }}
+              onMouseEnter={e => { if (isLoaded) { e.currentTarget.style.color = color.brand; e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.background = color.surface6; } }}
+              onMouseLeave={e => { if (isLoaded) { e.currentTarget.style.color = color.text8; e.currentTarget.style.borderColor = color.surface8; e.currentTarget.style.background = "none"; } }}
+            >SIGN IN</button>
+          )}
+          <button
+            onClick={onStart}
+            style={{
+              fontFamily: font.mono, fontSize: "11px", color: color.btnPrimaryText, background: color.btnPrimary,
+              border: "none", padding: "8px 20px", borderRadius: "4px",
+              cursor: "pointer", letterSpacing: "0.06em", fontWeight: "500", transition: "all 0.15s"
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = color.btnPrimaryHover; e.currentTarget.style.color = color.btnPrimaryText; }}
+            onMouseLeave={e => { e.currentTarget.style.background = color.btnPrimary; e.currentTarget.style.color = color.btnPrimaryText; }}
+          >{isLoaded && isSignedIn ? "OPEN APP" : "GET STARTED"}</button>
+        </div>
+      </nav>
+
+      {/* Two-column grid */}
+      <div style={{
+        position: "fixed", inset: "56px 0 0 0",
+        display: "grid", gridTemplateColumns: "1fr 1fr", overflow: "hidden"
+      }}>
+
+        {/* Left panel */}
+        <div style={{
+          display: "flex", flexDirection: "column", justifyContent: "center",
+          padding: "0 64px 0 72px",
+          borderRight: border.strong,
+          position: "relative"
+        }}>
+          <div className="sl-eyebrow" style={{
+            fontFamily: font.mono, fontSize: "10px", color: color.text9,
+            letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "28px",
+            display: "flex", alignItems: "center", gap: "10px"
+          }}>
+            <span style={{ width: "24px", height: "1px", background: color.textC, display: "inline-block", flexShrink: 0 }} />
+            Skill file quality
+          </div>
+
+          <h1 className="sl-h1" style={{
+            fontSize: "58px", fontWeight: "200", lineHeight: 1.06,
+            letterSpacing: "-0.03em", color: color.text1, margin: "0 0 28px"
+          }}>
+            Your skill files<br />
+            are <em style={{ fontStyle: "italic", fontWeight: "200", color: color.textB }}>probably</em><br />
+            <span style={{ fontWeight: "300", color: color.text1 }}>broken.</span>
+          </h1>
+
+          <p className="sl-sub" style={{
+            fontSize: "15px", fontWeight: "300", color: color.text8,
+            lineHeight: 1.8, maxWidth: "400px", margin: "0 0 48px"
+          }}>
+            Bad skill files <b style={{ color: color.text4, fontWeight: "400" }}>silently degrade Claude.</b>{" "}
+            Wrong triggers. Vague instructions. No edge cases.
+            You don&apos;t know until something fails in production.
+            SkillLint scores every dimension and rewrites
+            what&apos;s wrong.
+          </p>
+
+          <div className="sl-cta" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <button
+              onClick={onStart}
+              style={{
+                fontFamily: font.mono, fontSize: "12px", color: color.btnPrimaryText, background: color.btnPrimary,
+                border: "none", padding: "14px 32px", borderRadius: "6px",
+                cursor: "pointer", letterSpacing: "0.08em", fontWeight: "500",
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = color.btnPrimaryHover;
+                e.currentTarget.style.color = color.btnPrimaryText;
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "0 4px 20px rgba(255,255,255,0.08)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = color.btnPrimary;
+                e.currentTarget.style.color = color.btnPrimaryText;
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >EVALUATE YOUR SKILL →</button>
+            {(!isLoaded || !isSignedIn) && (
+              <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.textA, letterSpacing: "0.05em" }}>
+                Free. No key needed to start.
+              </span>
+            )}
+          </div>
+
+          <div className="sl-stats" style={{
+            position: "absolute", bottom: "48px", left: "72px",
+            display: "flex", gap: "40px"
+          }}>
+            {[
+              { num: "75",  label: "Heuristics" },
+              { num: "10",  label: "Categories" },
+              { num: "~3¢", label: "Per evaluation" },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontFamily: font.mono, fontSize: "22px", fontWeight: "400", color: color.text6, letterSpacing: "-0.02em" }}>{s.num}</div>
+                <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.textA, letterSpacing: "0.12em", textTransform: "uppercase", marginTop: "3px" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right panel — mock report */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: color.bgLanding, position: "relative", overflow: "hidden" }}>
+          <div style={{ width: "500px" }}>
+
+            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "32px", paddingBottom: "16px", borderBottom: border.subtle }}>
+              <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.text6, letterSpacing: "0.02em" }}>docx/SKILL.md</div>
+              <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.textA, letterSpacing: "0.05em" }}>116 lines · ~340 tokens</div>
+            </div>
+
+            <div style={{ marginBottom: "28px", paddingBottom: "24px", borderBottom: border.subtle }}>
+              <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.textA, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "10px" }}>Overall Score</div>
+              <div style={{ display: "flex", alignItems: "baseline", marginBottom: "6px" }}>
+                <span style={{ fontFamily: font.mono, fontSize: "72px", fontWeight: "300", lineHeight: 1, color: color.text3, letterSpacing: "-0.03em" }}>63</span>
+                <span style={{ fontFamily: font.mono, fontSize: "22px", fontWeight: "300", color: color.textA, marginLeft: "4px", alignSelf: "flex-end", marginBottom: "8px" }}>/100</span>
+              </div>
+              <div style={{ fontSize: "13px", fontWeight: "300", color: color.text7, lineHeight: 1.7, maxWidth: "420px" }}>
+                Trigger misfires on 3 competing skills.
+                Instructions assume context Claude won&apos;t have.
+                No edge case handling found.
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: "24px" }}>
+              {CATS.map((cat, i) => (
+                <CatRow key={cat.name} cat={cat} last={i === CATS.length - 1} />
+              ))}
+            </div>
+
+            <div style={{ paddingTop: "14px", borderTop: border.subtle }}>
+              <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.textA, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "8px" }}>Top Priority Fix</div>
+              <div style={{ fontSize: "13px", fontWeight: "300", color: color.text8, lineHeight: 1.7 }}>
+                Rewrite the description field — add 3 specific trigger
+                phrases and 2 explicit exclusions to prevent conflicts
+                with pdf-reading and docx skills.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

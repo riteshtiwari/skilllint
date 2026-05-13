@@ -1,58 +1,86 @@
 import { useState } from "react";
 import { keyManager } from "../lib/keyManager";
+import { color, font, radius } from "../tokens.js";
+
+const DEFAULT_API_URL = "https://api.anthropic.com";
+const URL_STORAGE_KEY = "skilllint_api_url_v1";
+
+function loadUrl() {
+  try { return localStorage.getItem(URL_STORAGE_KEY) || DEFAULT_API_URL; } catch { return DEFAULT_API_URL; }
+}
+function saveUrl(u) {
+  try { localStorage.setItem(URL_STORAGE_KEY, u); } catch { /* ignore */ }
+}
+function clearUrl() {
+  try { localStorage.removeItem(URL_STORAGE_KEY); } catch { /* ignore */ }
+}
 
 export function KeyInput({ onKeySet, onKeyClear }) {
   const [val, setVal] = useState("");
   const [saved, setSaved] = useState(() => {
-    // Clear any stored key that no longer passes validation (e.g. old format)
     if (keyManager.isValid()) return true;
     if (keyManager.get()) keyManager.clear();
     return false;
   });
   const [inputError, setInputError] = useState("");
+  const [apiUrl, setApiUrl] = useState(() => loadUrl());
+  const [urlDirty, setUrlDirty] = useState(false);
+
+  const isValidKey = val.startsWith("sk-ant-") && val.length > 20;
 
   const save = () => {
-    if (!val.startsWith("sk-ant-") || val.length <= 20) {
+    if (!isValidKey) {
       setInputError("Must start with sk-ant- and be at least 20 characters.");
       return;
     }
     setInputError("");
     keyManager.set(val);
+    const trimmed = apiUrl.trim();
+    if (trimmed && trimmed !== DEFAULT_API_URL) {
+      saveUrl(trimmed);
+    } else {
+      clearUrl();
+    }
     setSaved(true);
     setVal("");
+    setUrlDirty(false);
     onKeySet?.();
   };
 
   const clear = () => {
     keyManager.clear();
+    clearUrl();
     setVal("");
     setSaved(false);
     setInputError("");
+    setApiUrl(DEFAULT_API_URL);
+    setUrlDirty(false);
     onKeyClear?.();
   };
 
   if (saved) return (
-    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
-      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#4ade80" }}>key set</span>
-      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#777" }}>sk-ant-...••••</span>
+    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <span style={{ fontFamily: font.mono, fontSize: "12px", color: color.green }}>key set</span>
+      <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.textB }}>sk-ant-...••••</span>
+      {loadUrl() !== DEFAULT_API_URL && (
+        <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.textB }}>· proxy</span>
+      )}
       <button onClick={clear} style={{
         marginLeft: "auto", background: "none", border: "none",
-        color: "#777", cursor: "pointer", fontSize: "11px",
-        fontFamily: "'JetBrains Mono',monospace", letterSpacing: ".08em",
-        padding: 0
-      }}>CLEAR</button>
+        color: color.textB, cursor: "pointer", fontSize: "11px",
+        fontFamily: font.mono, letterSpacing: ".08em", padding: 0,
+        transition: "color 0.15s"
+      }}
+      onMouseEnter={e => e.currentTarget.style.color = color.brand}
+      onMouseLeave={e => e.currentTarget.style.color = color.textB}
+      >CLEAR</button>
     </div>
   );
 
   return (
     <div id="key-input">
-      <div style={{
-        fontFamily: "'JetBrains Mono',monospace", fontSize: "12px",
-        color: "#888", letterSpacing: ".06em", marginBottom: "8px"
-      }}>
-        ANTHROPIC API KEY — stored in your browser only
-      </div>
-      <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
+      {/* API Key */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}>
         <input
           type="password"
           value={val}
@@ -60,37 +88,65 @@ export function KeyInput({ onKeySet, onKeyClear }) {
           onKeyDown={e => e.key === "Enter" && save()}
           placeholder="sk-ant-..."
           style={{
-            flex: 1, background: "#0c0c0c",
-            border: `1px solid ${inputError ? "#f87171" : "#1e1e1e"}`,
-            borderRadius: "4px", padding: "10px 12px", color: "#ccc",
-            fontFamily: "'JetBrains Mono',monospace", fontSize: "13px", outline: "none"
+            flex: 1, background: color.surface0,
+            border: `1px solid ${inputError ? color.red : color.surface7}`,
+            borderRadius: radius.md, padding: "0 12px", height: "44px", color: color.text4,
+            fontFamily: font.mono, fontSize: "14px", outline: "none",
+            transition: "border-color 0.15s"
           }}
+          onMouseEnter={e => { if (document.activeElement !== e.target && !inputError) e.target.style.borderColor = color.brand; }}
+          onMouseLeave={e => { if (document.activeElement !== e.target && !inputError) e.target.style.borderColor = color.surface7; }}
+          onFocus={e => { if (!inputError) e.target.style.borderColor = color.brand; }}
+          onBlur={e => { if (!inputError) e.target.style.borderColor = color.surface7; }}
         />
         <button
           onClick={save}
-          disabled={!val.startsWith("sk-ant-") || val.length <= 20}
+          disabled={!isValidKey}
           style={{
-            background: (val.startsWith("sk-ant-") && val.length > 20) ? "#e8e8e8" : "#111",
-            color: (val.startsWith("sk-ant-") && val.length > 20) ? "#080808" : "#444",
-            border: "none", borderRadius: "4px", padding: "10px 18px",
-            fontFamily: "'JetBrains Mono',monospace", fontSize: "11px",
+            background: isValidKey ? color.btnPrimary : color.surface3,
+            color: isValidKey ? color.btnPrimaryText : color.textC,
+            border: "none", borderRadius: radius.md, padding: "0 18px", height: "44px",
+            fontFamily: font.mono, fontSize: "11px",
             letterSpacing: ".08em",
-            cursor: (val.startsWith("sk-ant-") && val.length > 20) ? "pointer" : "default"
+            cursor: isValidKey ? "pointer" : "default",
+            transition: "background 0.15s"
           }}
+          onMouseEnter={e => { if (isValidKey) e.currentTarget.style.background = color.btnPrimaryHover; }}
+          onMouseLeave={e => { if (isValidKey) e.currentTarget.style.background = color.btnPrimary; }}
         >SAVE</button>
       </div>
+
+      {/* API URL */}
+      <div style={{ marginBottom: inputError ? "6px" : "8px" }}>
+        <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.textC, letterSpacing: ".1em", marginBottom: "6px" }}>
+          API URL — change only if using a proxy
+        </div>
+        <input
+          type="text"
+          value={apiUrl}
+          onChange={e => { setApiUrl(e.target.value); setUrlDirty(true); }}
+          onKeyDown={e => e.key === "Enter" && save()}
+          placeholder={DEFAULT_API_URL}
+          style={{
+            width: "100%", background: color.surface0,
+            border: `1px solid ${color.surface6}`, borderRadius: radius.md,
+            padding: "0 12px", height: "38px", color: urlDirty && apiUrl !== DEFAULT_API_URL ? color.text4 : color.textC,
+            fontFamily: font.mono, fontSize: "12px", outline: "none",
+            boxSizing: "border-box", transition: "border-color 0.15s"
+          }}
+          onMouseEnter={e => { if (document.activeElement !== e.target) e.target.style.borderColor = color.brand; }}
+          onMouseLeave={e => { if (document.activeElement !== e.target) e.target.style.borderColor = color.surface6; }}
+          onFocus={e => e.target.style.borderColor = color.brand}
+          onBlur={e => e.target.style.borderColor = color.surface6}
+        />
+      </div>
+
       {inputError && (
         <div style={{
-          marginBottom: "6px", fontFamily: "'JetBrains Mono',monospace",
-          fontSize: "11px", color: "#f87171"
+          marginBottom: "8px", fontFamily: font.mono,
+          fontSize: "11px", color: color.red
         }}>{inputError}</div>
       )}
-      <div style={{
-        fontFamily: "'JetBrains Mono',monospace",
-        fontSize: "12px", color: "#777", lineHeight: 1.6
-      }}>
-        Get your key at console.anthropic.com. Without a key you get structural analysis only.
-      </div>
     </div>
   );
 }
