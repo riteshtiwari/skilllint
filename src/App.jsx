@@ -269,20 +269,17 @@ export default function SkillLint() {
       <div style={{ maxWidth: "640px", margin: "0 auto", padding: "0 48px" }}>
 
         {/* Hero */}
-        <div style={{ padding: "64px 0 44px" }}>
+        <div style={{ padding: "48px 0 36px" }}>
           <div style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
-            fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#4ade80",
-            letterSpacing: ".18em", border: "1px solid #1e2e1e", background: "#0a110a",
-            padding: "5px 12px", borderRadius: "2px", marginBottom: "24px"
+            fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#555",
+            letterSpacing: ".18em", marginBottom: "20px"
           }}>
-            <span style={{ width: "5px", height: "5px", background: "#4ade80", borderRadius: "50%", display: "inline-block" }} />
             75 HEURISTICS · 10 CATEGORIES
           </div>
-          <h1 style={{ fontSize: "52px", fontWeight: "300", lineHeight: 1.06, margin: "0 0 18px", letterSpacing: "-.03em", color: "#e8e8e8" }}>
+          <h1 style={{ fontSize: "40px", fontWeight: "300", lineHeight: 1.1, margin: "0 0 16px", letterSpacing: "-.02em", color: "#e8e8e8" }}>
             Lint your<br /><em style={{ fontStyle: "italic", color: "#444" }}>skill files.</em>
           </h1>
-          <p style={{ fontSize: "15px", color: "#777", fontWeight: "300", lineHeight: 1.8, margin: 0 }}>
+          <p style={{ fontSize: "14px", color: "#777", fontWeight: "300", maxWidth: "420px", lineHeight: 1.8, margin: 0 }}>
             Upload a <code style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#999", background: "#0f0f0f", padding: "2px 7px", borderRadius: "3px", border: "1px solid #1e1e1e" }}>.md</code> skill file. Score it across 75 heuristics. Get specific rewrites for every failing dimension.
           </p>
         </div>
@@ -347,7 +344,7 @@ export default function SkillLint() {
             <textarea value={content} onChange={e => { setContent(e.target.value); setStaticResult(null); setFileWarning(null); }}
               placeholder="Paste skill file content..."
               style={{
-                width: "100%", height: "130px", background: "#0c0c0c",
+                width: "100%", height: "100px", background: "#0c0c0c",
                 border: "1px solid #1a1a1a", borderRadius: "6px", padding: "12px 14px",
                 color: "#888", fontSize: "12px", fontFamily: "'JetBrains Mono',monospace",
                 resize: "none", outline: "none", boxSizing: "border-box", lineHeight: 1.7
