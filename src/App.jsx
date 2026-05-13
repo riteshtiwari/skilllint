@@ -241,148 +241,356 @@ export default function SkillLint() {
 
   // ── UPLOAD ──────────────────────────────────────────────────────────────────
   if (view === "upload") return (
-    <div style={BASE}>
+    <div style={{
+      ...BASE,
+      background: "radial-gradient(ellipse 80% 50% at 50% -10%, #0f1a0f 0%, #080808 60%)",
+      position: "relative",
+      overflowX: "hidden",
+    }}>
+      {/* Subtle grid texture — purely decorative, aria-hidden */}
+      <svg
+        aria-hidden="true"
+        style={{ position: "fixed", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0, opacity: 0.18 }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" strokeWidth="0.4" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+        {/* Vignette: fade the grid toward edges so it doesn't fight the content */}
+        <rect width="100%" height="100%" fill="url(#vignette)" />
+        <defs>
+          <radialGradient id="vignette" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stopColor="#080808" stopOpacity="0" />
+            <stop offset="100%" stopColor="#080808" stopOpacity="0.88" />
+          </radialGradient>
+        </defs>
+      </svg>
+
       {FONTS}
-      <Nav onLogoClick={reset} right={[
-        history.length > 0 && <NavBtn key="h" label={`HISTORY (${history.length})`} onClick={() => setView("history")} />
-      ]} />
-      <div style={{ maxWidth: "640px", margin: "0 auto", padding: "0 48px" }}>
-        <div style={{ padding: "80px 0 56px" }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555",
-            letterSpacing: ".18em", border: "1px solid #1e1e1e",
-            padding: "5px 10px", borderRadius: "2px", marginBottom: "28px"
-          }}>
-            <span style={{ width: "5px", height: "5px", background: "#4ade80", borderRadius: "50%", display: "inline-block" }} />
-            75 HEURISTICS · 10 CATEGORIES
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <Nav onLogoClick={reset} right={[
+          history.length > 0 && <NavBtn key="h" label={`HISTORY (${history.length})`} onClick={() => setView("history")} />
+        ]} />
+
+        {/* ── Hero ─────────────────────────────────────────────────────── */}
+        <div style={{ maxWidth: "860px", margin: "0 auto", padding: "0 48px" }}>
+          <div style={{ padding: "96px 0 64px" }}>
+
+            {/* Badge */}
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: "8px",
+              fontFamily: "'JetBrains Mono',monospace", fontSize: "9px",
+              color: "#4ade80",
+              letterSpacing: ".2em",
+              border: "1px solid rgba(74,222,128,0.18)",
+              background: "rgba(74,222,128,0.05)",
+              padding: "6px 14px", borderRadius: "3px", marginBottom: "36px"
+            }}>
+              <span style={{
+                width: "5px", height: "5px",
+                background: "#4ade80",
+                borderRadius: "50%",
+                display: "inline-block",
+                boxShadow: "0 0 6px rgba(74,222,128,0.7)"
+              }} />
+              75 HEURISTICS · 10 CATEGORIES
+            </div>
+
+            {/* Headline */}
+            <h1 style={{
+              fontSize: "clamp(52px, 7vw, 80px)",
+              fontWeight: "300",
+              lineHeight: 1.03,
+              margin: "0 0 28px",
+              letterSpacing: "-.04em",
+              color: "#e8e8e8",
+            }}>
+              Lint your
+              <br />
+              <em style={{
+                fontStyle: "italic",
+                background: "linear-gradient(135deg, #505050 0%, #242424 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>
+                skill files.
+              </em>
+            </h1>
+
+            {/* Sub-copy */}
+            <p style={{
+              fontSize: "15px",
+              color: "#5a5a5a",
+              fontWeight: "300",
+              maxWidth: "460px",
+              lineHeight: 1.9,
+              margin: 0,
+            }}>
+              Upload a{" "}
+              <code style={{
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "12px",
+                color: "#888",
+                background: "#111",
+                padding: "2px 8px",
+                borderRadius: "3px",
+                border: "1px solid #1e1e1e",
+              }}>.md</code>
+              {" "}skill file. Score it across 75 heuristics. Get specific rewrites for every failing dimension.
+            </p>
           </div>
-          <h1 style={{ fontSize: "46px", fontWeight: "300", lineHeight: 1.08, margin: "0 0 20px", letterSpacing: "-.03em", color: "#efefef" }}>
-            Lint your<br /><em style={{ fontStyle: "italic", color: "#444" }}>skill files.</em>
-          </h1>
-          <p style={{ fontSize: "14px", color: "#777", fontWeight: "300", maxWidth: "380px", lineHeight: 1.85, margin: 0 }}>
-            Upload a <code style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#666", background: "#0f0f0f", padding: "2px 7px", borderRadius: "3px" }}>.md</code> skill file. Score it across 75 heuristics. Get specific rewrites for every failing dimension.
-          </p>
         </div>
 
-        <div
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
-          onClick={() => !file && fileRef.current.click()}
-          style={{
-            border: `1px dashed ${dragOver ? "#333" : file ? "#1e1e1e" : "#141414"}`,
-            borderRadius: "8px", padding: file ? "24px 28px" : "52px 28px",
-            cursor: file ? "default" : "pointer",
-            background: dragOver ? "#0c0c0c" : "#090909",
-            transition: "all .15s", marginBottom: "14px"
-          }}
-        >
-          <input ref={fileRef} type="file" accept=".md,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
-          {file ? (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#4ade80", marginBottom: "3px" }}>✓ {file.name}</div>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#666" }}>
-                  {(file.size / 1024).toFixed(1)} KB · {content.split('\n').length} lines
+        {/* ── Action panel ─────────────────────────────────────────────── */}
+        <div style={{ maxWidth: "720px", margin: "0 auto", padding: "0 48px" }}>
+
+          {/* Drop zone */}
+          <div
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
+            onClick={() => !file && fileRef.current.click()}
+            style={{
+              border: `1px dashed ${dragOver ? "rgba(74,222,128,0.5)" : file ? "rgba(74,222,128,0.25)" : "rgba(255,255,255,0.08)"}`,
+              borderRadius: "10px",
+              padding: file ? "28px 32px" : "64px 32px",
+              cursor: file ? "default" : "pointer",
+              background: dragOver
+                ? "rgba(74,222,128,0.04)"
+                : file
+                  ? "rgba(74,222,128,0.025)"
+                  : "rgba(255,255,255,0.018)",
+              transition: "all .2s",
+              marginBottom: "12px",
+              boxShadow: dragOver
+                ? "0 0 0 1px rgba(74,222,128,0.2), 0 0 40px rgba(74,222,128,0.06) inset"
+                : file
+                  ? "0 0 0 1px rgba(74,222,128,0.1)"
+                  : "none",
+            }}
+          >
+            <input ref={fileRef} type="file" accept=".md,.txt" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
+
+            {file ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                  {/* File icon */}
+                  <svg width="28" height="34" viewBox="0 0 28 34" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M4 2h14l8 8v22a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2z" stroke="rgba(74,222,128,0.5)" strokeWidth="1.5" fill="rgba(74,222,128,0.05)" />
+                    <path d="M18 2v8h8" stroke="rgba(74,222,128,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M7 17h14M7 22h10" stroke="rgba(74,222,128,0.3)" strokeWidth="1.2" strokeLinecap="round" />
+                  </svg>
+                  <div>
+                    <div style={{
+                      fontFamily: "'JetBrains Mono',monospace",
+                      fontSize: "13px",
+                      color: "#4ade80",
+                      marginBottom: "4px",
+                      fontWeight: "500",
+                    }}>
+                      {file.name}
+                    </div>
+                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#555" }}>
+                      {(file.size / 1024).toFixed(1)} KB · {content.split('\n').length} lines
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); setFile(null); setContent(""); setStaticResult(null); }}
+                  style={{
+                    background: "none",
+                    border: "1px solid #222",
+                    borderRadius: "4px",
+                    padding: "6px 12px",
+                    cursor: "pointer",
+                    color: "#555",
+                    fontFamily: "'JetBrains Mono',monospace",
+                    fontSize: "9px",
+                    letterSpacing: ".1em",
+                    transition: "all .15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#888"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#222"; e.currentTarget.style.color = "#555"; }}
+                >
+                  CLEAR
+                </button>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center" }}>
+                {/* Upload SVG icon */}
+                <div style={{ marginBottom: "18px", display: "flex", justifyContent: "center" }}>
+                  <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect width="36" height="36" rx="8" fill="rgba(255,255,255,0.03)" />
+                    <path d="M18 24V12M18 12L13 17M18 12L23 17" stroke={dragOver ? "rgba(74,222,128,0.8)" : "#333"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "stroke .2s" }} />
+                    <path d="M11 26h14" stroke={dragOver ? "rgba(74,222,128,0.4)" : "#222"} strokeWidth="1.5" strokeLinecap="round" style={{ transition: "stroke .2s" }} />
+                  </svg>
+                </div>
+                <div style={{
+                  fontFamily: "'JetBrains Mono',monospace",
+                  fontSize: "10px",
+                  color: dragOver ? "#4ade80" : "#444",
+                  letterSpacing: ".14em",
+                  marginBottom: "6px",
+                  transition: "color .2s",
+                }}>
+                  DROP FILE OR CLICK TO BROWSE
+                </div>
+                <div style={{
+                  fontFamily: "'JetBrains Mono',monospace",
+                  fontSize: "9px",
+                  color: "#2e2e2e",
+                  letterSpacing: ".08em",
+                }}>
+                  .md or .txt · skill files only
                 </div>
               </div>
-              <button onClick={e => { e.stopPropagation(); setFile(null); setContent(""); setStaticResult(null); }} style={{
-                background: "none", border: "1px solid #1a1a1a", borderRadius: "3px",
-                padding: "5px 10px", cursor: "pointer", color: "#666",
-                fontFamily: "'JetBrains Mono',monospace", fontSize: "9px"
-              }}>CLEAR</button>
-            </div>
-          ) : (
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "22px", color: "#333", marginBottom: "10px" }}>↑</div>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#555", letterSpacing: ".1em" }}>DROP FILE OR CLICK TO BROWSE</div>
+            )}
+          </div>
+
+          {/* Paste textarea */}
+          {!file && (
+            <div style={{ marginBottom: "14px" }}>
+              <div style={{
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "8px",
+                color: "#383838",
+                letterSpacing: ".2em",
+                marginBottom: "8px",
+                textTransform: "uppercase",
+              }}>
+                or paste content
+              </div>
+              <textarea
+                value={content}
+                onChange={e => {
+                  const text = e.target.value;
+                  setContent(text);
+                  clearTimeout(debounceRef.current);
+                  debounceRef.current = setTimeout(() => {
+                    if (text.trim()) try { setStaticResult(runStaticAnalysis(text)); } catch { /* analysis errors silent */ }
+                    else setStaticResult(null);
+                  }, 300);
+                }}
+                placeholder="Paste skill file content..."
+                style={{
+                  width: "100%",
+                  height: "140px",
+                  background: "rgba(255,255,255,0.018)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "8px",
+                  padding: "14px 16px",
+                  color: "#777",
+                  fontSize: "11px",
+                  fontFamily: "'JetBrains Mono',monospace",
+                  resize: "none",
+                  outline: "none",
+                  boxSizing: "border-box",
+                  lineHeight: 1.75,
+                  transition: "border-color .15s",
+                }}
+                onFocus={e => e.target.style.borderColor = "rgba(255,255,255,0.12)"}
+                onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.06)"}
+              />
             </div>
           )}
-        </div>
 
-        {!file && (
-          <div style={{ marginBottom: "16px" }}>
-            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555", letterSpacing: ".15em", marginBottom: "6px" }}>OR PASTE CONTENT</div>
-            <textarea value={content} onChange={e => {
-              const text = e.target.value;
-              setContent(text);
-              clearTimeout(debounceRef.current);
-              debounceRef.current = setTimeout(() => {
-                if (text.trim()) try { setStaticResult(runStaticAnalysis(text)); } catch { /* analysis errors silent */ }
-                else setStaticResult(null);
-              }, 300);
-            }}
-              placeholder="Paste skill file content..."
-              style={{
-                width: "100%", height: "130px", background: "#090909",
-                border: "1px solid #111", borderRadius: "6px", padding: "12px 14px",
-                color: "#888", fontSize: "11px", fontFamily: "'JetBrains Mono',monospace",
-                resize: "none", outline: "none", boxSizing: "border-box", lineHeight: 1.7
-              }}
-              onFocus={e => e.target.style.borderColor = "#1e1e1e"}
-              onBlur={e => e.target.style.borderColor = "#111"}
-            />
-          </div>
-        )}
+          <KeyInput onKeySet={() => setHasKey(true)} onKeyClear={() => setHasKey(false)} />
 
-        <KeyInput onKeySet={() => setHasKey(true)} onKeyClear={() => setHasKey(false)} />
-
-        {staticResult && (
-          <div style={{ marginBottom: "14px", padding: "16px 18px", background: "#090909", border: "1px solid #141414", borderRadius: "6px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#666", letterSpacing: ".15em" }}>STRUCTURE SCORE</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "18px", fontWeight: "700", color: scoreColor(staticResult.staticScore) }}>{staticResult.staticScore}</span>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555" }}>/ 100</span>
+          {/* Static pre-analysis score */}
+          {staticResult && (
+            <div style={{
+              marginBottom: "12px",
+              padding: "18px 20px",
+              background: "rgba(255,255,255,0.018)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "8px",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#555", letterSpacing: ".18em" }}>STRUCTURE SCORE</div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "20px", fontWeight: "700", color: scoreColor(staticResult.staticScore) }}>{staticResult.staticScore}</span>
+                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#444" }}>/ 100</span>
+                </div>
+              </div>
+              {Object.entries(staticResult.staticCategories).map(([id, data]) => {
+                const cat = CATEGORIES.find(c => c.id === id);
+                return (
+                  <div key={id} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "7px" }}>
+                    <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#484848", flex: "0 0 150px" }}>{cat?.label || id}</div>
+                    <div style={{ flex: 1, height: "2px", background: "#131313", borderRadius: "1px" }}>
+                      <div style={{ height: "100%", width: `${data.score}%`, background: scoreColor(data.score), borderRadius: "1px" }} />
+                    </div>
+                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: scoreColor(data.score), minWidth: "24px", textAlign: "right" }}>{data.score}</span>
+                  </div>
+                );
+              })}
+              <div style={{ marginTop: "12px", fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#383838", letterSpacing: ".1em" }}>
+                {staticResult.heuristicsEvaluated} of 75 heuristics — add key for full evaluation
               </div>
             </div>
-            {Object.entries(staticResult.staticCategories).map(([id, data]) => {
-              const cat = CATEGORIES.find(c => c.id === id);
-              return (
-                <div key={id} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
-                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: "#555", flex: "0 0 140px" }}>{cat?.label || id}</div>
-                  <div style={{ flex: 1, height: "2px", background: "#141414", borderRadius: "1px" }}>
-                    <div style={{ height: "100%", width: `${data.score}%`, background: scoreColor(data.score) }} />
-                  </div>
-                  <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "9px", color: scoreColor(data.score), minWidth: "24px", textAlign: "right" }}>{data.score}</span>
-                </div>
-              );
-            })}
-            <div style={{ marginTop: "10px", fontFamily: "'JetBrains Mono',monospace", fontSize: "8px", color: "#444", letterSpacing: ".1em" }}>
-              {staticResult.heuristicsEvaluated} of 75 heuristics · add key for full evaluation
+          )}
+
+          {/* Error */}
+          {error && (
+            <div style={{
+              marginBottom: "12px",
+              padding: "12px 16px",
+              background: "rgba(248,113,113,0.04)",
+              border: "1px solid rgba(248,113,113,0.15)",
+              borderRadius: "6px",
+            }}>
+              <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#f87171" }}>{error}</span>
             </div>
-          </div>
-        )}
+          )}
 
-        {error && (
-          <div style={{ marginBottom: "14px", padding: "10px 14px", background: "#100808", border: "1px solid #2a0f0f", borderRadius: "4px" }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#f87171" }}>{error}</span>
-          </div>
-        )}
-
-        <button
-          disabled={!content.trim()}
-          onClick={() => {
-            if (!hasKey) {
-              document.getElementById("key-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
-              return;
-            }
-            evaluate(keyManager.get());
-          }}
-          style={{
-            width: "100%", padding: "15px",
-            background: content.trim() ? "#e8e8e8" : "#0e0e0e",
-            color: content.trim() ? "#080808" : "#222",
-            border: "none", borderRadius: "6px",
-            fontFamily: "'JetBrains Mono',monospace", fontSize: "11px",
-            letterSpacing: ".1em", fontWeight: "600",
-            cursor: content.trim() ? "pointer" : "default",
-            transition: "all .2s", marginBottom: "72px"
-          }}
-          onMouseEnter={e => content.trim() && (e.currentTarget.style.background = "#fff")}
-          onMouseLeave={e => content.trim() && (e.currentTarget.style.background = "#e8e8e8")}
-        >{hasKey ? "RUN EVALUATION →" : "ADD KEY TO EVALUATE →"}</button>
+          {/* CTA */}
+          <button
+            disabled={!content.trim()}
+            onClick={() => {
+              if (!hasKey) {
+                document.getElementById("key-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                return;
+              }
+              evaluate(keyManager.get());
+            }}
+            style={{
+              width: "100%",
+              padding: "17px",
+              background: content.trim()
+                ? "linear-gradient(135deg, #d4d4d4 0%, #f0f0f0 50%, #d4d4d4 100%)"
+                : "#0c0c0c",
+              color: content.trim() ? "#0a0a0a" : "#272727",
+              border: content.trim() ? "none" : "1px solid #161616",
+              borderRadius: "8px",
+              fontFamily: "'JetBrains Mono',monospace",
+              fontSize: "11px",
+              letterSpacing: ".12em",
+              fontWeight: "700",
+              cursor: content.trim() ? "pointer" : "default",
+              transition: "all .2s",
+              marginBottom: "80px",
+              boxShadow: content.trim()
+                ? "0 1px 0 rgba(255,255,255,0.1) inset, 0 4px 24px rgba(0,0,0,0.4)"
+                : "none",
+            }}
+            onMouseEnter={e => {
+              if (!content.trim()) return;
+              e.currentTarget.style.background = "linear-gradient(135deg, #e8e8e8 0%, #ffffff 50%, #e8e8e8 100%)";
+              e.currentTarget.style.boxShadow = "0 1px 0 rgba(255,255,255,0.15) inset, 0 6px 32px rgba(0,0,0,0.5)";
+            }}
+            onMouseLeave={e => {
+              if (!content.trim()) return;
+              e.currentTarget.style.background = "linear-gradient(135deg, #d4d4d4 0%, #f0f0f0 50%, #d4d4d4 100%)";
+              e.currentTarget.style.boxShadow = "0 1px 0 rgba(255,255,255,0.1) inset, 0 4px 24px rgba(0,0,0,0.4)";
+            }}
+          >
+            {hasKey ? "RUN EVALUATION" : "ADD KEY TO EVALUATE"}
+          </button>
+        </div>
       </div>
     </div>
   );
