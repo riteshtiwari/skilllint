@@ -12,7 +12,35 @@ const ANIM = `
 .sl-sub     { opacity: 0; animation: sl-slideUp 0.6s 0.35s ease forwards; }
 .sl-cta     { opacity: 0; animation: sl-slideUp 0.6s 0.5s ease forwards; }
 .sl-stats   { opacity: 0; animation: sl-slideUp 0.6s 0.65s ease forwards; }
+
+@keyframes sl-dot-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1;   }
+}
+@keyframes sl-dot-exit {
+  0%, 60%  { opacity: 1; }
+  100%     { opacity: 0; }
+}
+@keyframes sl-report-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.sl-dot-exit      { animation: sl-dot-exit   5s ease-in-out 1 forwards; }
+.sl-dot-pulse     { animation: sl-dot-pulse  0.7s ease-in-out infinite; }
+.sl-report-reveal { animation: sl-report-enter 1.2s 4.2s ease-in-out 1 forwards; }
 `;
+
+// Seeded pseudo-random — stable across renders, no re-render flicker
+function _r(seed) { const x = Math.sin(seed) * 43758.5453; return x - Math.floor(x); }
+
+// Processing dots — static positions, group pulse controls the "active" feel
+const PARTICLES = Array.from({ length: 800 }, (_, i) => ({
+  left:    `${_r(i * 13.7 + 1) * 98 + 1}%`,
+  top:     `${_r(i * 7.3  + 2) * 98 + 1}%`,
+  size:    _r(i * 3.7 + 2) < 0.6 ? 1 : 1.5,
+  opacity: 0.3 + _r(i * 5.3 + 6) * 0.65,
+}));
 
 // Mock report data — decorative only, colors are intentional demo values
 const CATS = [
@@ -215,44 +243,74 @@ export function Landing({ onStart }) {
           </div>
         </div>
 
-        {/* Right panel — mock report */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", background: color.bgLanding, position: "relative", overflow: "hidden" }}>
-          <div style={{ width: "500px" }}>
+        {/* Right panel — animated mock report */}
+        <div style={{ background: color.bgLanding, position: "relative", overflow: "hidden" }}>
 
-            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "32px", paddingBottom: "16px", borderBottom: border.subtle }}>
-              <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.text6, letterSpacing: "0.02em" }}>docx/SKILL.md</div>
-              <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.textA, letterSpacing: "0.05em" }}>116 lines · ~340 tokens</div>
-            </div>
-
-            <div style={{ marginBottom: "28px", paddingBottom: "24px", borderBottom: border.subtle }}>
-              <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.textA, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "10px" }}>Overall Score</div>
-              <div style={{ display: "flex", alignItems: "baseline", marginBottom: "6px" }}>
-                <span style={{ fontFamily: font.mono, fontSize: "72px", fontWeight: "300", lineHeight: 1, color: color.text3, letterSpacing: "-0.03em" }}>63</span>
-                <span style={{ fontFamily: font.mono, fontSize: "22px", fontWeight: "300", color: color.textA, marginLeft: "4px", alignSelf: "flex-end", marginBottom: "8px" }}>/100</span>
-              </div>
-              <div style={{ fontSize: "13px", fontWeight: "300", color: color.text7, lineHeight: 1.7, maxWidth: "420px" }}>
-                Trigger misfires on 3 competing skills.
-                Instructions assume context Claude won&apos;t have.
-                No edge case handling found.
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", marginBottom: "24px" }}>
-              {CATS.map((cat, i) => (
-                <CatRow key={cat.name} cat={cat} last={i === CATS.length - 1} />
+          {/* Processing dots — static field, group pulses as one unit */}
+          <div className="sl-dot-exit" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            <div className="sl-dot-pulse" style={{ position: "absolute", inset: 0 }}>
+              {PARTICLES.map((p, i) => (
+                <div
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    left: p.left, top: p.top,
+                    width: `${p.size}px`, height: `${p.size}px`,
+                    borderRadius: "50%",
+                    background: `rgba(255,255,255,${p.opacity})`,
+                  }}
+                />
               ))}
             </div>
-
-            <div style={{ paddingTop: "14px", borderTop: border.subtle }}>
-              <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.textA, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "8px" }}>Top Priority Fix</div>
-              <div style={{ fontSize: "13px", fontWeight: "300", color: color.text8, lineHeight: 1.7 }}>
-                Rewrite the description field — add 3 specific trigger
-                phrases and 2 explicit exclusions to prevent conflicts
-                with pdf-reading and docx skills.
-              </div>
-            </div>
-
           </div>
+
+          {/* Report content — fades in after dots clear */}
+          <div
+            className="sl-report-reveal"
+            style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              opacity: 0,
+            }}
+          >
+            <div style={{ width: "500px" }}>
+
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "32px", paddingBottom: "16px", borderBottom: border.subtle }}>
+                <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.text6, letterSpacing: "0.02em" }}>docx/SKILL.md</div>
+                <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.textA, letterSpacing: "0.05em" }}>116 lines · ~340 tokens</div>
+              </div>
+
+              <div style={{ marginBottom: "28px", paddingBottom: "24px", borderBottom: border.subtle }}>
+                <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.textA, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "10px" }}>Overall Score</div>
+                <div style={{ display: "flex", alignItems: "baseline", marginBottom: "6px" }}>
+                  <span style={{ fontFamily: font.mono, fontSize: "72px", fontWeight: "300", lineHeight: 1, color: color.text3, letterSpacing: "-0.03em" }}>63</span>
+                  <span style={{ fontFamily: font.mono, fontSize: "22px", fontWeight: "300", color: color.textA, marginLeft: "4px", alignSelf: "flex-end", marginBottom: "8px" }}>/100</span>
+                </div>
+                <div style={{ fontSize: "13px", fontWeight: "300", color: color.text7, lineHeight: 1.7, maxWidth: "420px" }}>
+                  Trigger misfires on 3 competing skills.
+                  Instructions assume context Claude won&apos;t have.
+                  No edge case handling found.
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", marginBottom: "24px" }}>
+                {CATS.map((cat, i) => (
+                  <CatRow key={cat.name} cat={cat} last={i === CATS.length - 1} />
+                ))}
+              </div>
+
+              <div style={{ paddingTop: "14px", borderTop: border.subtle }}>
+                <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.textA, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "8px" }}>Top Priority Fix</div>
+                <div style={{ fontSize: "13px", fontWeight: "300", color: color.text8, lineHeight: 1.7 }}>
+                  Rewrite the description field — add 3 specific trigger
+                  phrases and 2 explicit exclusions to prevent conflicts
+                  with pdf-reading and docx skills.
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         </div>
 
       </div>
