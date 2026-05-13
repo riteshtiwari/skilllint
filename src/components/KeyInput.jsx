@@ -32,39 +32,27 @@ export function KeyInput({ onKeySet, onKeyClear }) {
   };
 
   if (saved) return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: "12px",
-      padding: "14px 16px", background: "#0a0f0a",
-      border: "1px solid #1a2a1a", borderRadius: "6px",
-      marginBottom: "14px"
-    }}>
-      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#4ade80" }}>
-        key set
-      </span>
-      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#777" }}>
-        sk-ant-...••••
-      </span>
+    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
+      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#4ade80" }}>key set</span>
+      <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#777" }}>sk-ant-...••••</span>
       <button onClick={clear} style={{
         marginLeft: "auto", background: "none", border: "none",
         color: "#777", cursor: "pointer", fontSize: "11px",
-        fontFamily: "'JetBrains Mono',monospace", letterSpacing: ".08em"
+        fontFamily: "'JetBrains Mono',monospace", letterSpacing: ".08em",
+        padding: 0
       }}>CLEAR</button>
     </div>
   );
 
   return (
-    <div id="key-input" style={{
-      padding: "18px", background: "#0c0c0c",
-      border: "1px solid #1a1a1a", borderRadius: "6px",
-      marginBottom: "14px"
-    }}>
+    <div id="key-input">
       <div style={{
         fontFamily: "'JetBrains Mono',monospace", fontSize: "12px",
-        color: "#888", letterSpacing: ".08em", marginBottom: "10px"
+        color: "#888", letterSpacing: ".06em", marginBottom: "8px"
       }}>
         ANTHROPIC API KEY — stored in your browser only
       </div>
-      <div style={{ display: "flex", gap: "8px" }}>
+      <div style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
         <input
           type="password"
           value={val}
@@ -72,7 +60,7 @@ export function KeyInput({ onKeySet, onKeyClear }) {
           onKeyDown={e => e.key === "Enter" && save()}
           placeholder="sk-ant-..."
           style={{
-            flex: 1, background: "#080808",
+            flex: 1, background: "#0c0c0c",
             border: `1px solid ${inputError ? "#f87171" : "#1e1e1e"}`,
             borderRadius: "4px", padding: "10px 12px", color: "#ccc",
             fontFamily: "'JetBrains Mono',monospace", fontSize: "13px", outline: "none"
@@ -93,12 +81,12 @@ export function KeyInput({ onKeySet, onKeyClear }) {
       </div>
       {inputError && (
         <div style={{
-          marginTop: "8px", fontFamily: "'JetBrains Mono',monospace",
+          marginBottom: "6px", fontFamily: "'JetBrains Mono',monospace",
           fontSize: "11px", color: "#f87171"
         }}>{inputError}</div>
       )}
       <div style={{
-        marginTop: "10px", fontFamily: "'JetBrains Mono',monospace",
+        fontFamily: "'JetBrains Mono',monospace",
         fontSize: "12px", color: "#777", lineHeight: 1.6
       }}>
         Get your key at console.anthropic.com. Without a key you get structural analysis only.

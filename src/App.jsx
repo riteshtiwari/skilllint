@@ -269,21 +269,20 @@ export default function SkillLint() {
       <div style={{ maxWidth: "640px", margin: "0 auto", padding: "0 48px" }}>
 
         {/* Hero */}
-        <div style={{ padding: "72px 0 52px" }}>
+        <div style={{ padding: "64px 0 44px" }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: "8px",
             fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#4ade80",
-            letterSpacing: ".18em", border: "1px solid #1e2e1e",
-            background: "#0a110a",
-            padding: "5px 12px", borderRadius: "2px", marginBottom: "28px"
+            letterSpacing: ".18em", border: "1px solid #1e2e1e", background: "#0a110a",
+            padding: "5px 12px", borderRadius: "2px", marginBottom: "24px"
           }}>
             <span style={{ width: "5px", height: "5px", background: "#4ade80", borderRadius: "50%", display: "inline-block" }} />
             75 HEURISTICS · 10 CATEGORIES
           </div>
-          <h1 style={{ fontSize: "52px", fontWeight: "300", lineHeight: 1.06, margin: "0 0 20px", letterSpacing: "-.03em", color: "#e8e8e8" }}>
+          <h1 style={{ fontSize: "52px", fontWeight: "300", lineHeight: 1.06, margin: "0 0 18px", letterSpacing: "-.03em", color: "#e8e8e8" }}>
             Lint your<br /><em style={{ fontStyle: "italic", color: "#444" }}>skill files.</em>
           </h1>
-          <p style={{ fontSize: "15px", color: "#888", fontWeight: "300", maxWidth: "400px", lineHeight: 1.8, margin: 0 }}>
+          <p style={{ fontSize: "15px", color: "#777", fontWeight: "300", lineHeight: 1.8, margin: 0 }}>
             Upload a <code style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#999", background: "#0f0f0f", padding: "2px 7px", borderRadius: "3px", border: "1px solid #1e1e1e" }}>.md</code> skill file. Score it across 75 heuristics. Get specific rewrites for every failing dimension.
           </p>
         </div>
@@ -295,11 +294,11 @@ export default function SkillLint() {
           onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
           onClick={() => !file && fileRef.current.click()}
           style={{
-            border: `1px dashed ${dragOver ? "#4ade80" : file ? "#2a3a2a" : "#1e1e1e"}`,
+            border: `1px solid ${dragOver ? "#4ade80" : "#1e1e1e"}`,
             borderRadius: "8px",
-            padding: file ? "28px 32px" : "56px 32px",
+            padding: "28px 32px",
             cursor: file ? "default" : "pointer",
-            background: dragOver ? "#0a120a" : file ? "#0a0f0a" : "#0c0c0c",
+            background: dragOver ? "#0a120a" : "#0c0c0c",
             transition: "all .15s", marginBottom: "12px"
           }}
         >
@@ -307,7 +306,7 @@ export default function SkillLint() {
           {file ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "16px", color: "#4ade80", marginBottom: "6px", fontWeight: "500" }}>{file.name}</div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "16px", color: "#e0e0e0", marginBottom: "6px", fontWeight: "500" }}>{file.name}</div>
                 <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "12px", color: "#888" }}>
                   {(file.size / 1024).toFixed(1)} KB · {content.split('\n').length} lines
                 </div>
@@ -319,30 +318,31 @@ export default function SkillLint() {
               }}>CLEAR</button>
             </div>
           ) : (
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "24px", color: dragOver ? "#4ade80" : "#333", marginBottom: "12px", transition: "color .15s" }}>↑</div>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: dragOver ? "#4ade80" : "#888", letterSpacing: ".1em", transition: "color .15s" }}>DROP FILE OR CLICK TO BROWSE</div>
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#666", marginTop: "6px" }}>.md or .txt</div>
+            <div>
+              <div style={{ fontSize: "20px", color: dragOver ? "#4ade80" : "#333", marginBottom: "10px", transition: "color .15s" }}>↑</div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: dragOver ? "#4ade80" : "#888", letterSpacing: ".1em", transition: "color .15s", marginBottom: "4px" }}>DROP FILE OR CLICK TO BROWSE</div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#666" }}>.md or .txt</div>
             </div>
           )}
         </div>
 
         {/* File warning */}
         {fileWarning && (
-          <div style={{ marginBottom: "12px", padding: "12px 16px", background: "#100e00", border: "1px solid #2a2500", borderRadius: "4px" }}>
+          <div style={{ marginBottom: "12px", padding: "14px 16px", background: "#100e00", border: "1px solid #2a2500", borderRadius: "4px" }}>
             <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#fbbf24", marginBottom: "6px", letterSpacing: ".08em" }}>WARNING</div>
-            <div style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.6 }}>{fileWarning}</div>
-            <button onClick={() => setFileWarning(null)} style={{
-              marginTop: "8px", background: "none", border: "none", padding: 0,
-              fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#777",
-              cursor: "pointer", textDecoration: "underline"
-            }}>Proceed anyway</button>
+            <div style={{ fontSize: "13px", color: "#ccc", lineHeight: 1.6, marginBottom: "8px" }}>{fileWarning}</div>
+            <button
+              onClick={() => setFileWarning(null)}
+              style={{ background: "none", border: "none", padding: 0, fontFamily: "'JetBrains Mono',monospace", fontSize: "11px", color: "#777", cursor: "pointer", textDecoration: "none" }}
+              onMouseEnter={e => e.currentTarget.style.textDecoration = "underline"}
+              onMouseLeave={e => e.currentTarget.style.textDecoration = "none"}
+            >Proceed anyway</button>
           </div>
         )}
 
         {/* Paste textarea — only when no file */}
         {!file && (
-          <div style={{ marginBottom: "14px" }}>
+          <div style={{ marginBottom: "12px" }}>
             <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#777", letterSpacing: ".15em", marginBottom: "8px" }}>OR PASTE CONTENT</div>
             <textarea value={content} onChange={e => { setContent(e.target.value); setStaticResult(null); setFileWarning(null); }}
               placeholder="Paste skill file content..."
@@ -360,7 +360,7 @@ export default function SkillLint() {
 
         {/* Static analysis result — only shown after explicit click */}
         {staticResult && (
-          <div style={{ marginBottom: "14px", padding: "20px 22px", background: "#0c0c0c", border: "1px solid #1a1a1a", borderRadius: "6px" }}>
+          <div style={{ marginBottom: "12px", padding: "20px 22px", background: "#0c0c0c", border: "1px solid #1a1a1a", borderRadius: "6px" }}>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "18px" }}>
               <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "10px", color: "#777", letterSpacing: ".15em" }}>STRUCTURE SCORE</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
@@ -386,7 +386,10 @@ export default function SkillLint() {
           </div>
         )}
 
-        <KeyInput onKeySet={() => setHasKey(true)} onKeyClear={() => setHasKey(false)} />
+        {/* API key */}
+        <div style={{ marginBottom: "20px" }}>
+          <KeyInput onKeySet={() => setHasKey(true)} onKeyClear={() => setHasKey(false)} />
+        </div>
 
         {error && (
           <div style={{ marginBottom: "12px", padding: "12px 16px", background: "#100808", border: "1px solid #2a0f0f", borderRadius: "4px" }}>
@@ -395,9 +398,8 @@ export default function SkillLint() {
         )}
 
         {/* Action buttons */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "80px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "80px" }}>
           {hasKey ? (
-            // Key set: single primary CTA for full evaluation
             <button
               disabled={!content.trim()}
               onClick={() => {
@@ -409,7 +411,7 @@ export default function SkillLint() {
                 evaluate(keyManager.get());
               }}
               style={{
-                width: "100%", padding: "16px",
+                width: "100%", padding: "15px",
                 background: content.trim() ? "#e8e8e8" : "#0e0e0e",
                 color: content.trim() ? "#080808" : "#333",
                 border: content.trim() ? "none" : "1px solid #1a1a1a",
@@ -423,13 +425,12 @@ export default function SkillLint() {
               onMouseLeave={e => content.trim() && (e.currentTarget.style.background = "#e8e8e8")}
             >RUN FULL EVALUATION — 75 HEURISTICS</button>
           ) : (
-            // No key: two buttons
             <>
               <button
                 disabled={!content.trim()}
                 onClick={runFreeAnalysis}
                 style={{
-                  width: "100%", padding: "16px",
+                  width: "100%", padding: "15px",
                   background: content.trim() ? "#e8e8e8" : "#0e0e0e",
                   color: content.trim() ? "#080808" : "#333",
                   border: content.trim() ? "none" : "1px solid #1a1a1a",
@@ -446,9 +447,9 @@ export default function SkillLint() {
                 disabled={!content.trim()}
                 onClick={() => document.getElementById("key-input")?.scrollIntoView({ behavior: "smooth", block: "center" })}
                 style={{
-                  width: "100%", padding: "15px",
+                  width: "100%", padding: "14px",
                   background: "none",
-                  color: content.trim() ? "#888" : "#333",
+                  color: content.trim() ? "#666" : "#333",
                   border: `1px solid ${content.trim() ? "#222" : "#141414"}`,
                   borderRadius: "6px",
                   fontFamily: "'JetBrains Mono',monospace", fontSize: "12px",
@@ -456,8 +457,8 @@ export default function SkillLint() {
                   cursor: content.trim() ? "pointer" : "default",
                   transition: "all .15s"
                 }}
-                onMouseEnter={e => content.trim() && (e.currentTarget.style.borderColor = "#444", e.currentTarget.style.color = "#ccc")}
-                onMouseLeave={e => content.trim() && (e.currentTarget.style.borderColor = "#222", e.currentTarget.style.color = "#888")}
+                onMouseEnter={e => { if (content.trim()) { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#ccc"; } }}
+                onMouseLeave={e => { if (content.trim()) { e.currentTarget.style.borderColor = "#222"; e.currentTarget.style.color = "#666"; } }}
               >RUN FULL EVALUATION — ADD KEY FIRST</button>
             </>
           )}
