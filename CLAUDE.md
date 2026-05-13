@@ -28,6 +28,29 @@ reviewers/commit-reviewer.md  — build/test gate, commit message quality, human
 
 A push is blocked until the commit reviewer returns APPROVED.
 
+### After every push:
+
+Update `PROGRESS.md` immediately after a successful push. This file is gitignored and never committed — it is a local working document only.
+
+`PROGRESS.md` tracks four things:
+
+```
+## Done
+What has been completed and pushed. One line per item, specific.
+
+## In Progress
+What is actively being worked on right now. One item at a time.
+
+## Next
+The next 3–5 tasks from the build order, in sequence.
+
+## Blockers
+Anything that is blocking progress — missing credentials, unresolved
+review findings, external dependencies not yet set up.
+```
+
+Keep it current. After each push, move completed items to Done, update In Progress, and refresh Next from the build order in SKILLLINT_PLAN.md.
+
 ---
 
 ## 2. Build and Test Before Every Commit
