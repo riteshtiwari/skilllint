@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useUser, useClerk } from "@clerk/clerk-react";
+import { useUser, useClerk, useSession } from "@clerk/clerk-react";
 import { color, font, border, radius } from "./tokens.js";
 import { keyManager } from "./lib/keyManager";
 import { KeyInput } from "./components/KeyInput";
 import { Landing } from "./components/Landing";
 import { HamburgerMenu } from "./components/HamburgerMenu";
 import { runStaticAnalysis } from "./lib/staticAnalysis";
+import { saveEvaluation, loadHistory, deleteEvaluation, deleteAllEvaluations } from "./lib/history";
 
 const CATEGORIES = [
   { id: "discoverability",       label: "Discoverability",        weight: 15 },
@@ -24,10 +25,6 @@ const scoreColor = s => s >= 80 ? color.green : s >= 60 ? color.amber : s >= 40 
 const scoreLabel = s => s >= 85 ? "EXCEPTIONAL" : s >= 65 ? "GOOD" : s >= 45 ? "NEEDS WORK" : s >= 25 ? "FAILING" : "CRITICAL";
 const monoScoreColor = s => s >= 80 ? color.scoreHi : s >= 60 ? color.scoreMid : color.scoreLo;
 const monoScoreUnderline = s => s >= 80 ? null : s >= 60 ? `1.5px solid ${color.underlineMid}` : `1.5px solid ${color.underlineLo}`;
-
-const STORAGE_KEY = "skilllint_history_v1";
-const loadHistory = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; } };
-const saveHistory = (h) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(h)); } catch { /* localStorage errors must not crash the app */ } };
 
 const LOADING_MSGS = ["Parsing structure...", "Checking trigger precision...", "Scanning for conflicts...", "Measuring token density...", "Evaluating edge cases...", "Running 75 heuristics...", "Finalizing report..."];
 
@@ -236,13 +233,15 @@ function CategoryRow({ cat, data, index }) {
 export default function SkillLint() {
   const { isLoaded: clerkLoaded, isSignedIn, user } = useUser();
   const { signOut } = useClerk();
+  const { session } = useSession();
   const [view, setView] = useState("landing");
   const [file, setFile] = useState(null);
   const [content, setContent] = useState("");
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [dragOver, setDragOver] = useState(false);
-  const [history, setHistory] = useState(() => loadHistory());
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [msgIdx, setMsgIdx] = useState(0);
   const [hasKey, setHasKey] = useState(() => keyManager.isValid());
   const [staticResult, setStaticResult] = useState(null);
@@ -250,6 +249,9 @@ export default function SkillLint() {
   const fileRef = useRef();
   const debounceRef = useRef(null);
   const prevSignedIn = useRef(false);
+
+  const getToken = useCallback(() =>
+    session?.getToken({ template: "supabase" }), [session]);
 
   useEffect(() => {
     if (view !== "loading") return;
@@ -264,6 +266,15 @@ export default function SkillLint() {
     if (!clerkLoaded) return;
     if (prevSignedIn.current === false && isSignedIn) {
       setView("upload");
+      setHistoryLoading(true);
+      getToken().then(token => {
+        if (!token) return;
+        return loadHistory({ clerkToken: token });
+      }).then(data => {
+        if (data) setHistory(data);
+      }).catch(() => {
+        // History load failure must not block the app
+      }).finally(() => setHistoryLoading(false));
     }
     if (prevSignedIn.current === true && !isSignedIn) {
       keyManager.clear();
@@ -275,9 +286,10 @@ export default function SkillLint() {
       setStaticResult(null);
       setFileWarning(null);
       setHasKey(false);
+      setHistory([]);
     }
     prevSignedIn.current = isSignedIn;
-  }, [clerkLoaded, isSignedIn]);
+  }, [clerkLoaded, isSignedIn, getToken]);
 
   const handleFile = useCallback((f) => {
     if (!f) return;
@@ -336,18 +348,33 @@ export default function SkillLint() {
       if (data.overall_score == null) {
         throw new Error("Empty response from evaluation. Try again.");
       }
-      const entry = {
-        id: Date.now(), filename: file?.name || "pasted",
-        score: data.overall_score,
-        date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        result: data
-      };
-      setHistory(prev => {
-        const h = [entry, ...prev].slice(0, 20);
-        saveHistory(h);
-        return h;
-      });
       setResult(data); setView("result");
+      // Save to Supabase in the background — failure must not affect the result view
+      getToken().then(token => {
+        if (!token) return;
+        return saveEvaluation({
+          clerkToken: token,
+          userId: user.id,
+          filename: file?.name || "pasted",
+          score: data.overall_score,
+          staticScore: null,
+          result: data,
+          staticResult: null,
+        });
+      }).then(saved => {
+        if (saved) {
+          const entry = {
+            id: saved.id,
+            filename: file?.name || "pasted",
+            score: data.overall_score,
+            created_at: saved.created_at,
+            result: data,
+          };
+          setHistory(prev => [entry, ...prev].slice(0, 20));
+        }
+      }).catch(() => {
+        // History save failure must not affect the result view
+      });
     } catch (err) {
       clearTimeout(timeoutId);
       if (err.name === "AbortError") {
@@ -360,8 +387,27 @@ export default function SkillLint() {
   };
 
   const reset = () => { setView("upload"); setFile(null); setContent(""); setResult(null); setError(null); setStaticResult(null); setFileWarning(null); };
-  const clearHistory = () => { setHistory([]); saveHistory([]); };
-  const deleteHistoryEntry = (id) => setHistory(prev => { const h = prev.filter(e => e.id !== id); saveHistory(h); return h; });
+
+  const clearHistory = () => {
+    setHistory([]);
+    getToken().then(token => {
+      if (!token) return;
+      return deleteAllEvaluations({ clerkToken: token, userId: user.id });
+    }).catch(() => {
+      // Deletion failure is non-fatal — optimistic update already applied
+    });
+  };
+
+  const deleteHistoryEntry = (id) => {
+    setHistory(prev => prev.filter(e => e.id !== id));
+    getToken().then(token => {
+      if (!token) return;
+      return deleteEvaluation({ clerkToken: token, id });
+    }).catch(() => {
+      // Deletion failure is non-fatal
+    });
+  };
+
   const loadEntry = (entry) => { setResult(entry.result); setFile({ name: entry.filename }); setView("result"); };
 
   const appMenu = (
@@ -369,7 +415,7 @@ export default function SkillLint() {
       historyCount={history.length}
       onHistory={() => setView("history")}
       onSettings={() => setView("settings")}
-      onSignOut={() => signOut()}
+      onSignOut={() => signOut({ redirectUrl: "/" })}
     />
   );
 
@@ -716,7 +762,7 @@ export default function SkillLint() {
           <div>
             <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text8, letterSpacing: ".18em", marginBottom: "8px" }}>EVALUATION HISTORY</div>
             <div style={{ fontSize: "13px", color: color.text8 }}>
-              {history.length === 0 ? "No evaluations yet." : `${history.length} evaluation${history.length === 1 ? "" : "s"}`}
+              {historyLoading ? "Loading..." : history.length === 0 ? "No evaluations yet." : `${history.length} evaluation${history.length === 1 ? "" : "s"}`}
             </div>
           </div>
           {history.length > 0 && (
@@ -752,7 +798,9 @@ export default function SkillLint() {
             </div>
             <div onClick={() => loadEntry(entry)} style={{ cursor: "pointer" }}>
               <div style={{ fontSize: "14px", color: color.text4, marginBottom: "4px", fontWeight: "400" }}>{entry.filename}</div>
-              <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text9 }}>{entry.date}</div>
+              <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text9 }}>
+                {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <button
@@ -809,7 +857,7 @@ export default function SkillLint() {
                   <div style={{ fontFamily: font.mono, fontSize: "13px", color: color.text8 }}>{email || "—"}</div>
                 </div>
                 <button
-                  onClick={() => signOut()}
+                  onClick={() => signOut({ redirectUrl: "/" })}
                   style={{
                     background: "none", border: `1px solid ${color.borderError}`,
                     borderRadius: radius.md, padding: "8px 16px", cursor: "pointer",
@@ -850,7 +898,7 @@ export default function SkillLint() {
                 <div>
                   <div style={{ fontSize: "14px", color: color.text8, marginBottom: "4px" }}>Evaluation history</div>
                   <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.text9 }}>
-                    {history.length} of 20 stored locally
+                    {history.length} stored
                   </div>
                 </div>
                 {history.length > 0 && (

@@ -28,3 +28,4 @@ skilltest.md
 *.njsproj
 *.sln
 *.sw?
+.vercel
