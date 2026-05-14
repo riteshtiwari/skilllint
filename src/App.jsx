@@ -478,7 +478,7 @@ export default function SkillLint() {
   // ── UPLOAD ──────────────────────────────────────────────────────────────────
   if (view === "upload") return (
     <div style={BASE}>
-      <Nav onLogoClick={reset} right={appMenu} />
+      <Nav onLogoClick={() => setView("landing")} right={appMenu} />
 
       <div style={{ maxWidth: "860px", margin: "0 auto", padding: "0 64px" }}>
 
@@ -707,7 +707,7 @@ export default function SkillLint() {
     const stats = result.file_stats || {};
     return (
       <div style={BASE}>
-        <Nav onLogoClick={reset} right={
+        <Nav onLogoClick={() => setView("landing")} right={
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <NavBtn label="EXPORT .MD" onClick={exportMd} />
             <NavBtn label="NEW FILE" onClick={reset} />
@@ -781,7 +781,7 @@ export default function SkillLint() {
   // ── HISTORY ─────────────────────────────────────────────────────────────────
   if (view === "history") return (
     <div style={BASE}>
-      <Nav onLogoClick={reset} right={<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>{backBtn}{appMenu}</div>} />
+      <Nav onLogoClick={() => setView("landing")} right={<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>{backBtn}{appMenu}</div>} />
       <div style={{ maxWidth: "720px", margin: "0 auto", padding: "52px 48px 80px" }}>
 
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "40px" }}>
@@ -862,7 +862,7 @@ export default function SkillLint() {
     const name = user?.fullName || user?.firstName;
     return (
       <div style={BASE}>
-        <Nav onLogoClick={reset} right={<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>{backBtn}{appMenu}</div>} />
+        <Nav onLogoClick={() => setView("landing")} right={<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>{backBtn}{appMenu}</div>} />
         <div style={{ maxWidth: "640px", margin: "0 auto", padding: "52px 48px 80px" }}>
 
           <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text8, letterSpacing: ".18em", marginBottom: "40px" }}>SETTINGS</div>
