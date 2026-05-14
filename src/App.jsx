@@ -44,12 +44,12 @@ function looksLikeSkillFile(text) {
 function NavBtn({ label, onClick }) {
   return (
     <button onClick={onClick} style={{
-      background: "none", border: border.strong, borderRadius: radius.md,
-      padding: "6px 14px", cursor: "pointer", color: color.text7,
+      background: "none", border: "1px solid #333", borderRadius: radius.md,
+      padding: "6px 14px", cursor: "pointer", color: color.text4,
       fontFamily: font.mono, fontSize: "10px", letterSpacing: ".08em", transition: "all .15s"
     }}
     onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; e.currentTarget.style.background = color.surface4; }}
-    onMouseLeave={e => { e.currentTarget.style.borderColor = color.surface8; e.currentTarget.style.color = color.text7; e.currentTarget.style.background = "none"; }}>
+    onMouseLeave={e => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.color = color.text4; e.currentTarget.style.background = "none"; }}>
       {label}
     </button>
   );

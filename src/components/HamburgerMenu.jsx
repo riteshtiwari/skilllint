@@ -46,7 +46,7 @@ export function HamburgerMenu({ onHistory, onSettings, onSignOut, historyCount }
         onClick={() => setOpen(v => !v)}
         style={{
           background: open ? color.hoverSurface : "none",
-          border: `1px solid ${open ? color.brand : color.surface7}`,
+          border: `1px solid ${open ? color.brand : "#333"}`,
           borderRadius: radius.md,
           width: "36px", height: "32px",
           cursor: "pointer",
@@ -61,15 +61,15 @@ export function HamburgerMenu({ onHistory, onSettings, onSignOut, historyCount }
           e.currentTarget.querySelectorAll("span").forEach(s => s.style.background = color.brand);
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.borderColor = open ? color.brand : color.surface7;
+          e.currentTarget.style.borderColor = open ? color.brand : "#333";
           e.currentTarget.style.background = open ? color.hoverSurface : "none";
-          e.currentTarget.querySelectorAll("span").forEach(s => s.style.background = open ? color.brand : color.textA);
+          e.currentTarget.querySelectorAll("span").forEach(s => s.style.background = open ? color.brand : color.text7);
         }}
       >
         {[0, 1, 2].map(i => (
           <span key={i} style={{
             display: "block", width: "14px", height: "1px",
-            background: open ? color.brand : color.textA,
+            background: open ? color.brand : color.text7,
             transition: "background 0.15s",
           }} />
         ))}
