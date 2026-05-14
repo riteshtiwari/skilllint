@@ -56,6 +56,12 @@ export const color = {
   bgGood:    "#0a120a",   // drag-over, success tint
   bgTopFix:  "#0c0c0a",   // top-priority fix card
 
+  // Diff view — line colors and backgrounds
+  diffAdded:      "#c6efde",              // added-line text (muted green readable on dark bg)
+  diffRemoved:    "#f5c2c2",              // removed-line text (muted red readable on dark bg)
+  bgDiffAdded:    "rgba(74,222,128,0.07)",  // added-line row background
+  bgDiffRemoved:  "rgba(248,113,113,0.07)", // removed-line row background
+
   // Button surfaces
   btnPrimary:        "#e0e0e0",  // primary button bg (resting)
   btnPrimaryHover:   "#ffffff",  // primary button bg (hover)

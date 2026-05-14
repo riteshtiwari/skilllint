@@ -8,6 +8,7 @@ import { HamburgerMenu } from "./components/HamburgerMenu";
 import { runStaticAnalysis } from "./lib/staticAnalysis";
 import { saveEvaluation, loadHistory, deleteEvaluation, deleteAllEvaluations } from "./lib/history";
 import { classifyError } from "./lib/errors";
+import { DiffView } from "./components/DiffView";
 
 const CATEGORIES = [
   { id: "discoverability",       label: "Discoverability",        weight: 15 },
@@ -312,9 +313,17 @@ export default function SkillLint() {
   const [hasKey, setHasKey] = useState(() => keyManager.isValid());
   const [staticResult, setStaticResult] = useState(null);
   const [fileWarning, setFileWarning] = useState(null);
+  const [improved, setImproved] = useState(null);
+  const [improving, setImproving] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
+  // Snapshot of content at evaluation time — ensures generateImproved() only runs
+  // when the current content matches the file that was actually evaluated.
+  const [evaluatedContent, setEvaluatedContent] = useState("");
   const fileRef = useRef();
   const debounceRef = useRef(null);
   const prevSignedIn = useRef(false);
+  const improveControllerRef = useRef(null);
+  const improveTimeoutRef = useRef(null);
   const isMobile = useWindowWidth() < 640;
 
   const getToken = useCallback(() =>
@@ -446,6 +455,8 @@ export default function SkillLint() {
         throw new Error("Empty response from evaluation. Try again.");
       }
       setResult(data); setView("result");
+      setEvaluatedContent(content); // snapshot — ties the improve call to this exact evaluation
+      setImproved(null); setShowDiff(false);
       // Save to Supabase in the background — failure must not affect the result view
       getToken().then(token => {
         if (!token) return;
@@ -483,7 +494,13 @@ export default function SkillLint() {
     }
   };
 
-  const reset = () => { setView("upload"); setFile(null); setContent(""); setResult(null); setError(null); setStaticResult(null); setFileWarning(null); };
+  const reset = () => {
+    improveControllerRef.current?.abort();
+    clearTimeout(improveTimeoutRef.current);
+    setView("upload"); setFile(null); setContent(""); setResult(null);
+    setError(null); setStaticResult(null); setFileWarning(null);
+    setImproved(null); setImproving(false); setShowDiff(false); setEvaluatedContent("");
+  };
 
   const clearHistory = () => {
     setHistory([]);
@@ -507,9 +524,113 @@ export default function SkillLint() {
 
   // Guard against null result: a history entry with missing result data should not
   // navigate to the result view — it would render a blank screen.
+  // History entries do not store the original file content, so we clear content and
+  // the evaluatedContent snapshot — this hides the "Generate Improved" section for
+  // history-loaded results, where there is no file to diff against.
   const loadEntry = (entry) => {
     if (!entry.result) return;
-    setResult(entry.result); setFile({ name: entry.filename }); setError(null); setView("result");
+    improveControllerRef.current?.abort();
+    clearTimeout(improveTimeoutRef.current);
+    setResult(entry.result); setFile({ name: entry.filename }); setError(null);
+    setContent(""); setEvaluatedContent("");
+    setImproved(null); setImproving(false); setShowDiff(false);
+    setView("result");
+  };
+
+  // True when the current evaluation was run against the content that is still in state.
+  // False for history-loaded results (content cleared) and for stale evaluations where
+  // the user changed the file without re-evaluating.
+  const canGenerateImproved = !!content && !!result && hasKey && content === evaluatedContent;
+
+  const generateImproved = async () => {
+    if (!canGenerateImproved || improving) return;
+
+    // Cancel any leftover in-flight call (defensive — the guard above should prevent this).
+    improveControllerRef.current?.abort();
+    clearTimeout(improveTimeoutRef.current);
+
+    setImproving(true);
+    setImproved(null);
+    setShowDiff(false);
+
+    const controller = new AbortController();
+    improveControllerRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 90000);
+    improveTimeoutRef.current = timeoutId;
+
+    try {
+      const res = await fetch("/api/improve", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": keyManager.get() || "",
+        },
+        body: JSON.stringify({ content, evaluation: result }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        let errData;
+        try { errData = await res.json(); } catch { errData = {}; }
+        throw new Error(errData.error || `Server error (${res.status})`);
+      }
+
+      // Build per-request sentinels from the stream ID header.
+      // The server generates a UUID per call so sentinels can never collide with
+      // markdown content in the improved file.
+      const streamId = res.headers.get("X-Stream-Id") || "DONE";
+      const SENTINEL_DONE  = `\n__DONE_${streamId}__\n`;
+      const SENTINEL_ERROR = `\n__ERROR_${streamId}__:`;
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let raw = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) { raw += decoder.decode(); break; }
+        raw += decoder.decode(value, { stream: true });
+      }
+
+      if (raw.includes(SENTINEL_ERROR)) {
+        const msg = raw.split(SENTINEL_ERROR)[1]?.trim() || "Generation failed";
+        throw new Error(msg);
+      }
+      if (!raw.includes(SENTINEL_DONE)) {
+        throw new Error("Generation timed out. Try again.");
+      }
+
+      let improvedContent = raw.split(SENTINEL_DONE)[0].trim();
+      // Strip any wrapping code fence the model may have added despite instructions.
+      improvedContent = improvedContent.replace(/^```\w*\s*/i, "").replace(/\s*```$/i, "").trim();
+      if (!improvedContent) throw new Error("Empty response. Try again.");
+
+      // Discard result if this call was aborted while reading (e.g., user hit "NEW FILE").
+      if (controller.signal.aborted) return;
+
+      setImproved(improvedContent);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      // AbortError means the user intentionally navigated away — don't surface an error.
+      if (err.name === "AbortError") return;
+      setError(err.message || "Generation failed. Try again.");
+    } finally {
+      setImproving(false);
+    }
+  };
+
+  const downloadImproved = () => {
+    if (!improved) return;
+    const blob = new Blob([improved], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const baseName = (file?.name || "skill").replace(/\.md$/i, "");
+    a.download = `${baseName}-improved.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   };
 
   const appMenu = (
@@ -840,6 +961,130 @@ export default function SkillLint() {
             <div style={{ marginBottom: "28px", padding: "20px 24px", background: color.bgGood, border: border.default, borderLeft: `3px solid ${color.green}`, borderRadius: radius.lg }}>
               <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.green, letterSpacing: ".15em", marginBottom: "10px" }}>REWRITTEN TRIGGER</div>
               <div style={{ fontSize: "13px", color: color.text6, lineHeight: 1.85, fontFamily: font.mono, whiteSpace: "pre-wrap" }}>{result.rewritten_trigger}</div>
+            </div>
+          )}
+
+          {/* Improved version section — only shown for fresh evaluations, not history entries */}
+          {(canGenerateImproved || improving || improved) && (
+            <div style={{
+              margin: "28px 0",
+              padding: "20px 24px",
+              background: color.surface1,
+              border: border.default,
+              borderRadius: radius.lg,
+            }}>
+              <div style={{
+                fontFamily: font.mono, fontSize: "10px", color: color.text8,
+                letterSpacing: ".15em", marginBottom: "14px",
+              }}>
+                IMPROVED VERSION
+              </div>
+
+              {/* Idle — not yet generated */}
+              {!improved && !improving && (
+                <>
+                  <div style={{ fontSize: "13px", color: color.text8, lineHeight: 1.7, marginBottom: "16px" }}>
+                    Generate a complete, improved skill file that addresses every finding above. Download it, then run it back through SkillLint to verify the score.
+                  </div>
+                  <button
+                    onClick={generateImproved}
+                    style={{
+                      width: "100%", height: "44px",
+                      background: color.btnPrimary, color: color.btnPrimaryText,
+                      border: "none", borderRadius: radius.lg,
+                      fontFamily: font.mono, fontSize: "12px",
+                      letterSpacing: ".1em", fontWeight: "700",
+                      cursor: "pointer", transition: "all .15s",
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = color.btnPrimaryHover; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = color.btnPrimary; }}
+                  >GENERATE IMPROVED FILE</button>
+                </>
+              )}
+
+              {/* Loading */}
+              {improving && (
+                <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "4px 0" }}>
+                  <style>{`@keyframes impBar { from { background:#333; transform:scaleY(.4); } to { background:#bbb; transform:scaleY(1); } }`}</style>
+                  <div style={{ display: "flex", gap: "3px", alignItems: "flex-end", height: "20px" }}>
+                    {[0, 1, 2, 3, 4].map(i => (
+                      <div key={i} style={{
+                        width: "3px", height: "100%", background: "#333",
+                        borderRadius: "2px", transformOrigin: "bottom",
+                        animation: `impBar 0.9s ease-in-out ${i * 0.12}s infinite alternate`,
+                      }} />
+                    ))}
+                  </div>
+                  <span style={{ fontFamily: font.mono, fontSize: "12px", color: color.text8 }}>
+                    Rewriting skill file\u2026
+                  </span>
+                </div>
+              )}
+
+              {/* Done */}
+              {improved && !improving && (
+                <div>
+                  <div style={{ fontSize: "13px", color: color.text8, lineHeight: 1.7, marginBottom: "16px" }}>
+                    Ready. Download the improved file, then drop it back into SkillLint to see the score change.
+                  </div>
+                  <div style={{
+                    display: "flex", gap: "8px",
+                    flexDirection: isMobile ? "column" : "row",
+                    marginBottom: showDiff ? "0" : "0",
+                  }}>
+                    <button
+                      onClick={downloadImproved}
+                      style={{
+                        flex: isMobile ? undefined : 1,
+                        height: "40px",
+                        background: color.btnPrimary, color: color.btnPrimaryText,
+                        border: "none", borderRadius: radius.lg,
+                        fontFamily: font.mono, fontSize: "11px",
+                        letterSpacing: ".1em", fontWeight: "700",
+                        cursor: "pointer", transition: "all .15s",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = color.btnPrimaryHover; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = color.btnPrimary; }}
+                    >
+                      DOWNLOAD {(file?.name || "skill").replace(/\.md$/i, "")}-improved.md
+                    </button>
+                    <button
+                      onClick={() => setShowDiff(v => !v)}
+                      style={{
+                        height: "40px", padding: "0 20px",
+                        background: "none",
+                        border: `1px solid ${showDiff ? color.brand : "#333"}`,
+                        color: showDiff ? color.brand : color.text8,
+                        borderRadius: radius.lg,
+                        fontFamily: font.mono, fontSize: "11px",
+                        letterSpacing: ".08em",
+                        cursor: "pointer", transition: "all .15s",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = showDiff ? color.brand : "#333"; e.currentTarget.style.color = showDiff ? color.brand : color.text8; }}
+                    >
+                      {showDiff ? "HIDE DIFF" : "SHOW DIFF"}
+                    </button>
+                    <button
+                      onClick={generateImproved}
+                      style={{
+                        height: "40px", padding: "0 20px",
+                        background: "none", border: "1px solid #333",
+                        color: color.text8,
+                        borderRadius: radius.lg,
+                        fontFamily: font.mono, fontSize: "11px",
+                        letterSpacing: ".08em",
+                        cursor: "pointer", transition: "all .15s",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.color = color.text8; }}
+                    >REGENERATE</button>
+                  </div>
+                  {showDiff && (
+                    <DiffView original={content} improved={improved} isMobile={isMobile} />
+                  )}
+                </div>
+              )}
             </div>
           )}
 
