@@ -87,7 +87,7 @@ export default async function handler(req) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 4096,
+        max_tokens: 3000,
         stream: true,
         system: IMPROVE_SYSTEM_PROMPT,
         messages: [{ role: "user", content: buildImprovePrompt(content, evaluation) }],

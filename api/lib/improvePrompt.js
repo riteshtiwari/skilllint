@@ -68,9 +68,19 @@ The file must:
 - Access only specifically named resources — no wildcard access patterns
 - Label irreversible actions (send email, post to service, delete record) and require confirmation
 
+## What NOT to add
+
+- Version numbers, dates, or timestamps — you do not know when this file was last updated
+- Maintainer contact info or any placeholder text in brackets like [name] or [handle]
+- Instructions for capabilities the original skill did not claim to support
+- Aspirational implementation details that depend on tools Claude may not have (encoding detection, delimiter sniffing, injection scanning) unless the original explicitly stated these were available
+- Anything that makes the file longer without directly fixing a failing heuristic
+
+Length discipline: a shorter, more precise file scores higher than a longer, comprehensive one. Every line that loads into context costs tokens on every invocation. When in doubt, cut. Fix what scored low. Leave what scored well alone.
+
 ## Approach
 
-Apply every fix from the evaluation below. Then check the improved file against the rules above and fix anything those rules identify, even if the evaluation did not flag it. Preserve the original skill's purpose, domain, and intent. Preserve any examples or domain knowledge that are already correct and useful. Improve — do not replace without reason.`;
+Apply the fixes from the evaluation below. Target the specific failing categories — do not rewrite sections that are already passing. Preserve the original skill's purpose, domain, and intent. Preserve any examples or domain knowledge that are correct and useful. Improve surgically — do not pad.`;
 
 // Category labels in display order — matches CATEGORIES array in App.jsx.
 const CATEGORY_LABELS = {
