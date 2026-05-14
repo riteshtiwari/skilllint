@@ -10,15 +10,15 @@ import { saveEvaluation, loadHistory, deleteEvaluation, deleteAllEvaluations } f
 
 const CATEGORIES = [
   { id: "discoverability",       label: "Discoverability",        weight: 15 },
-  { id: "instruction_quality",   label: "Instruction Quality",    weight: 20 },
+  { id: "instruction_quality",   label: "Instruction Quality",    weight: 18 },
   { id: "scope_boundaries",      label: "Scope & Boundaries",     weight: 12 },
-  { id: "structural_integrity",  label: "Structural Integrity",   weight: 8  },
+  { id: "structural_integrity",  label: "Structural Integrity",   weight: 7  },
   { id: "token_economics",       label: "Token Economics",        weight: 10 },
   { id: "consistency_conflicts", label: "Consistency & Conflicts",weight: 10 },
   { id: "robustness",            label: "Robustness",             weight: 10 },
-  { id: "examples_evidence",     label: "Examples & Evidence",    weight: 8  },
-  { id: "maintainability",       label: "Maintainability",        weight: 4  },
-  { id: "safety_side_effects",   label: "Safety & Side Effects",  weight: 3  },
+  { id: "examples_evidence",     label: "Examples & Evidence",    weight: 7  },
+  { id: "maintainability",       label: "Maintainability",        weight: 3  },
+  { id: "security",              label: "Security",               weight: 8  },
 ];
 
 const scoreColor = s => s >= 80 ? color.green : s >= 60 ? color.amber : s >= 40 ? color.orange : color.red;
@@ -488,7 +488,7 @@ export default function SkillLint() {
             fontFamily: font.mono, fontSize: "11px", color: color.text8,
             letterSpacing: ".18em", marginBottom: "16px"
           }}>
-            75 HEURISTICS · 10 CATEGORIES
+            80 HEURISTICS · 10 CATEGORIES
           </div>
           <h1 style={{ fontSize: "56px", fontWeight: "300", lineHeight: 1.1, margin: "0 0 20px", letterSpacing: "-.02em", color: color.text2 }}>
             Lint your<br /><em style={{ fontStyle: "italic", color: color.text8 }}>skill files.</em>
@@ -608,7 +608,7 @@ export default function SkillLint() {
                 );
               })}
               <div style={{ marginTop: "12px", fontFamily: font.mono, fontSize: "11px", color: color.text8, lineHeight: 1.6 }}>
-                {staticResult.heuristicsEvaluated} of 75 heuristics — add key in Settings for full evaluation
+                {staticResult.heuristicsEvaluated} of 80 heuristics — add key in Settings for full evaluation
               </div>
             </div>
           )
@@ -642,7 +642,7 @@ export default function SkillLint() {
               }}
               onMouseEnter={e => { if (content.trim()) { e.currentTarget.style.background = color.btnPrimaryHover; e.currentTarget.style.color = color.btnPrimaryText; } }}
               onMouseLeave={e => { if (content.trim()) { e.currentTarget.style.background = color.btnPrimary; e.currentTarget.style.color = color.btnPrimaryText; } }}
-            >RUN FULL EVALUATION — 75 HEURISTICS</button>
+            >RUN FULL EVALUATION — 80 HEURISTICS</button>
           ) : (
             <>
               <button
@@ -661,7 +661,7 @@ export default function SkillLint() {
                 }}
                 onMouseEnter={e => { if (content.trim()) { e.currentTarget.style.background = color.btnPrimaryHover; e.currentTarget.style.color = color.btnPrimaryText; } }}
                 onMouseLeave={e => { if (content.trim()) { e.currentTarget.style.background = color.btnPrimary; e.currentTarget.style.color = color.btnPrimaryText; } }}
-              >RUN FREE ANALYSIS — 22 HEURISTICS</button>
+              >RUN FREE ANALYSIS — 27 HEURISTICS</button>
               <button
                 onClick={() => setView("settings")}
                 style={{
@@ -677,7 +677,7 @@ export default function SkillLint() {
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.color = color.text8; }}
-              >RUN FULL EVALUATION — ADD KEY IN SETTINGS</button>
+              >RUN FULL EVALUATION — 80 HEURISTICS, ADD KEY IN SETTINGS</button>
             </>
           )}
         </div>

@@ -237,7 +237,7 @@ export function Landing({ onStart }) {
             display: "flex", gap: "40px"
           }}>
             {[
-              { num: "75",  label: "Heuristics" },
+              { num: "80",  label: "Heuristics" },
               { num: "10",  label: "Categories" },
               { num: "~3¢", label: "Per evaluation" },
             ].map(s => (
