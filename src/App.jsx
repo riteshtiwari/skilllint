@@ -28,7 +28,17 @@ const scoreLabel = s => s >= 85 ? "EXCEPTIONAL" : s >= 65 ? "GOOD" : s >= 45 ? "
 const monoScoreColor = s => s >= 80 ? color.scoreHi : s >= 60 ? color.scoreMid : color.scoreLo;
 const monoScoreUnderline = s => s >= 80 ? null : s >= 60 ? `1.5px solid ${color.underlineMid}` : `1.5px solid ${color.underlineLo}`;
 
-const LOADING_MSGS = ["Parsing structure...", "Checking trigger precision...", "Scanning for conflicts...", "Measuring token density...", "Evaluating edge cases...", "Running 80 heuristics...", "Finalizing report..."];
+const LOADING_MSGS = [
+  "Parsing structure...",
+  "Checking trigger precision...",
+  "Auditing security gates...",
+  "Scanning for conflicts...",
+  "Measuring token efficiency...",
+  "Evaluating edge cases...",
+  "Checking instruction clarity...",
+  "Running 80 heuristics...",
+  "Finalizing report...",
+];
 
 const BASE = { minHeight: "100vh", background: color.bg, color: color.text3, fontFamily: font.sans };
 
