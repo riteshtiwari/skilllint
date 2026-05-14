@@ -84,13 +84,13 @@ export const color = {
   // Score display — monochrome system
   // Scores communicate through brightness and underline only. No color coding.
   scoreNum:     "#d0d0d0",  // big score number (arc, static card)
-  scoreDenom:   "#555",     // "/100" text
-  scoreCaption: "#666",     // "STRUCTURE SCORE", arc badge label
+  scoreDenom:   "#888",     // "/100" text
+  scoreCaption: "#999",     // "STRUCTURE SCORE", arc badge label
   barFill:      "#484848",  // all category bars — same regardless of score
   barTrack:     "#252525",  // bar track background
   scoreHi:      "#aaa",     // score ≥80 number
   scoreMid:     "#888",     // score 60–79 number
-  scoreLo:      "#666",     // score <60 number
+  scoreLo:      "#787878",  // score <60 number — passes WCAG AA (4.54:1 vs #080808)
   underlineMid: "#7a5c1a",  // muted amber underline for score 60–79
   underlineLo:  "#7a3535",  // muted red underline for score <60
 };

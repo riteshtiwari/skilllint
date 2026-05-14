@@ -44,12 +44,12 @@ const PARTICLES = Array.from({ length: 800 }, (_, i) => ({
 
 // Mock report data — decorative only, colors are intentional demo values
 const CATS = [
-  { name: "Discoverability",     pct: 42, score: "42", barColor: "#3a3a3a", scoreColor: "#666",    underline: "#7a3535" },
-  { name: "Instruction Quality", pct: 58, score: "58", barColor: "#484848", scoreColor: "#777",    underline: "#7a5c1a" },
+  { name: "Discoverability",     pct: 42, score: "42", barColor: "#3a3a3a", scoreColor: "#888",    underline: "#7a3535" },
+  { name: "Instruction Quality", pct: 58, score: "58", barColor: "#484848", scoreColor: "#888",    underline: "#7a5c1a" },
   { name: "Scope & Boundaries",  pct: 71, score: "71", barColor: "#585858", scoreColor: "#888",    underline: "#7a5c1a" },
   { name: "Token Economics",     pct: 65, score: "65", barColor: "#525252", scoreColor: "#828282", underline: "#7a5c1a" },
-  { name: "Robustness",          pct: 38, score: "38", barColor: "#363636", scoreColor: "#606060", underline: "#7a3535" },
-  { name: "Examples & Evidence", pct: 20, score: "20", barColor: "#2a2a2a", scoreColor: "#555",    underline: "#7a3535" },
+  { name: "Robustness",          pct: 38, score: "38", barColor: "#363636", scoreColor: "#888",    underline: "#7a3535" },
+  { name: "Examples & Evidence", pct: 20, score: "20", barColor: "#2a2a2a", scoreColor: "#888",    underline: "#7a3535" },
   { name: "Structural Integrity",pct: 88, score: "88", barColor: "#787878", scoreColor: "#aaa",    underline: null     },
   { name: "Maintainability",     pct: 74, score: "74", barColor: "#606060", scoreColor: "#909090", underline: "#7a5c1a" },
 ];
@@ -121,7 +121,7 @@ export function Landing({ onStart }) {
             fontFamily: font.mono, fontSize: "9px", fontWeight: "500", color: color.brand
           }}>SL</div>
           <span style={{ fontFamily: font.mono, fontSize: "13px", color: color.text4, letterSpacing: "0.04em" }}>
-            skilllint<span style={{ color: color.textA }}>.dev</span>
+            skilllint<span style={{ color: color.text8 }}>.dev</span>
           </span>
         </div>
 
@@ -175,7 +175,7 @@ export function Landing({ onStart }) {
           position: "relative"
         }}>
           <div className="sl-eyebrow" style={{
-            fontFamily: font.mono, fontSize: "10px", color: color.text9,
+            fontFamily: font.mono, fontSize: "10px", color: color.text8,
             letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "28px",
             display: "flex", alignItems: "center", gap: "10px"
           }}>
@@ -226,7 +226,7 @@ export function Landing({ onStart }) {
               }}
             >EVALUATE YOUR SKILL →</button>
             {(!isLoaded || !isSignedIn) && (
-              <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.textA, letterSpacing: "0.05em" }}>
+              <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.text8, letterSpacing: "0.05em" }}>
                 Free. No key needed to start.
               </span>
             )}
@@ -283,14 +283,14 @@ export function Landing({ onStart }) {
 
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "32px", paddingBottom: "16px", borderBottom: border.subtle }}>
                 <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.text6, letterSpacing: "0.02em" }}>docx/SKILL.md</div>
-                <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.textA, letterSpacing: "0.05em" }}>116 lines · ~340 tokens</div>
+                <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text8, letterSpacing: "0.05em" }}>116 lines · ~340 tokens</div>
               </div>
 
               <div style={{ marginBottom: "28px", paddingBottom: "24px", borderBottom: border.subtle }}>
-                <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.textA, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "10px" }}>Overall Score</div>
+                <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.text8, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "10px" }}>Overall Score</div>
                 <div style={{ display: "flex", alignItems: "baseline", marginBottom: "6px" }}>
                   <span style={{ fontFamily: font.mono, fontSize: "72px", fontWeight: "300", lineHeight: 1, color: color.text3, letterSpacing: "-0.03em" }}>63</span>
-                  <span style={{ fontFamily: font.mono, fontSize: "22px", fontWeight: "300", color: color.textA, marginLeft: "4px", alignSelf: "flex-end", marginBottom: "8px" }}>/100</span>
+                  <span style={{ fontFamily: font.mono, fontSize: "22px", fontWeight: "300", color: color.text8, marginLeft: "4px", alignSelf: "flex-end", marginBottom: "8px" }}>/100</span>
                 </div>
                 <div style={{ fontSize: "13px", fontWeight: "300", color: color.text7, lineHeight: 1.7, maxWidth: "420px" }}>
                   Trigger misfires on 3 competing skills.
@@ -306,7 +306,7 @@ export function Landing({ onStart }) {
               </div>
 
               <div style={{ paddingTop: "14px", borderTop: border.subtle }}>
-                <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.textA, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "8px" }}>Top Priority Fix</div>
+                <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.text8, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: "8px" }}>Top Priority Fix</div>
                 <div style={{ fontSize: "13px", fontWeight: "300", color: color.text8, lineHeight: 1.7 }}>
                   Rewrite the description field — add 3 specific trigger
                   phrases and 2 explicit exclusions to prevent conflicts

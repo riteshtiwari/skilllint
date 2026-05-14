@@ -64,7 +64,7 @@ function Nav({ onLogoClick, right, center }) {
     }}>
       <button onClick={onLogoClick} style={{ display: "flex", alignItems: "center", gap: "10px", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
         <div style={{ width: "24px", height: "24px", border: `1.5px solid ${color.brand}`, display: "grid", placeItems: "center", fontFamily: font.mono, fontSize: "9px", fontWeight: "700", color: color.brand }}>SL</div>
-        <span style={{ fontFamily: font.mono, fontSize: "13px", letterSpacing: ".06em", color: color.text4 }}>skilllint<span style={{ color: color.textA }}>.dev</span></span>
+        <span style={{ fontFamily: font.mono, fontSize: "13px", letterSpacing: ".06em", color: color.text4 }}>skilllint<span style={{ color: color.text8 }}>.dev</span></span>
       </button>
       {center && <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>{center}</div>}
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>{right}</div>
@@ -104,13 +104,13 @@ function StaticCategoryRow({ label, data, last }) {
           }}>{data.score}</span>
         </div>
         <div
-          style={{ width: "16px", textAlign: "center", fontFamily: font.mono, fontSize: "14px", color: hovered ? "#aaa" : "#555", transition: "color 0.12s", flexShrink: 0 }}
+          style={{ width: "16px", textAlign: "center", fontFamily: font.mono, fontSize: "14px", color: hovered ? "#aaa" : color.text8, transition: "color 0.12s", flexShrink: 0 }}
         >{open ? "−" : "+"}</div>
       </div>
 
       {open && (
         <div style={{ background: "#111", borderRadius: "4px", padding: "12px 14px", margin: "2px 0 8px" }}>
-          <div style={{ fontFamily: font.mono, fontSize: "10px", color: "#555", letterSpacing: "0.12em", marginBottom: "8px" }}>
+          <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text8, letterSpacing: "0.12em", marginBottom: "8px" }}>
             CHECKED: {data.checkedSummary}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: data.improvement ? "10px" : 0 }}>
@@ -118,7 +118,7 @@ function StaticCategoryRow({ label, data, last }) {
               <div key={i} style={{
                 fontFamily: font.mono,
                 fontSize: chk.passed ? "11px" : "12px",
-                color: chk.passed ? "#555" : "#aaa",
+                color: chk.passed ? color.text7 : "#aaa",
                 lineHeight: 1.5,
               }}>
                 {chk.passed ? "✓" : "✗"} {chk.text}
@@ -127,7 +127,7 @@ function StaticCategoryRow({ label, data, last }) {
           </div>
           {data.improvement && (
             <>
-              <div style={{ fontFamily: font.mono, fontSize: "9px", color: "#555", letterSpacing: "0.15em", textTransform: "uppercase", marginTop: "10px", marginBottom: "4px" }}>
+              <div style={{ fontFamily: font.mono, fontSize: "9px", color: color.text8, letterSpacing: "0.15em", textTransform: "uppercase", marginTop: "10px", marginBottom: "4px" }}>
                 HOW TO IMPROVE
               </div>
               <div style={{ fontFamily: font.sans, fontSize: "12px", color: "#888", lineHeight: 1.6 }}>
@@ -485,13 +485,13 @@ export default function SkillLint() {
         {/* Hero */}
         <div style={{ paddingTop: "52px" }}>
           <div style={{
-            fontFamily: font.mono, fontSize: "11px", color: color.text9,
+            fontFamily: font.mono, fontSize: "11px", color: color.text8,
             letterSpacing: ".18em", marginBottom: "16px"
           }}>
             75 HEURISTICS · 10 CATEGORIES
           </div>
           <h1 style={{ fontSize: "56px", fontWeight: "300", lineHeight: 1.1, margin: "0 0 20px", letterSpacing: "-.02em", color: color.text2 }}>
-            Lint your<br /><em style={{ fontStyle: "italic", color: color.textC }}>skill files.</em>
+            Lint your<br /><em style={{ fontStyle: "italic", color: color.text8 }}>skill files.</em>
           </h1>
           <p style={{ fontSize: "16px", color: color.text8, fontWeight: "300", lineHeight: 1.7, margin: "0 0 40px" }}>
             Upload a <code style={{ fontFamily: font.mono, fontSize: "13px", color: color.text7, background: color.surface2, padding: "2px 7px", borderRadius: radius.sm, border: border.default }}>.md</code> skill file. Score it across 75 heuristics. Get specific rewrites for every failing dimension.
@@ -521,27 +521,27 @@ export default function SkillLint() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", textAlign: "left" }}>
               <div>
                 <div style={{ fontFamily: font.mono, fontSize: "16px", color: color.green, marginBottom: "6px", fontWeight: "500" }}>{file.name}</div>
-                <div style={{ fontFamily: font.mono, fontSize: "13px", color: color.textA }}>
+                <div style={{ fontFamily: font.mono, fontSize: "13px", color: color.text8 }}>
                   {(file.size / 1024).toFixed(1)} KB · {content.split('\n').length} lines
                 </div>
               </div>
               <button
                 onClick={e => { e.stopPropagation(); setFile(null); setContent(""); setStaticResult(null); setFileWarning(null); }}
                 style={{
-                  background: "none", border: border.strong, borderRadius: radius.sm,
-                  padding: "6px 12px", cursor: "pointer", color: color.textA,
+                  background: "none", border: "1px solid #333", borderRadius: radius.sm,
+                  padding: "6px 12px", cursor: "pointer", color: color.text8,
                   fontFamily: font.mono, fontSize: "10px", letterSpacing: ".08em",
                   transition: "all .15s"
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = color.surface8; e.currentTarget.style.color = color.textA; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.color = color.text8; }}
               >CLEAR</button>
             </div>
           ) : (
             <>
-              <div style={{ fontSize: "20px", color: dragOver ? color.green : color.textD, marginBottom: "10px", transition: "color .15s" }}>↑</div>
-              <div style={{ fontFamily: font.mono, fontSize: "13px", color: dragOver ? color.green : color.textA, letterSpacing: ".1em", transition: "color .15s", marginBottom: "4px" }}>DROP FILE OR CLICK TO BROWSE</div>
-              <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.textC }}>.md or .txt</div>
+              <div style={{ fontSize: "20px", color: dragOver ? color.green : color.text7, marginBottom: "10px", transition: "color .15s" }}>↑</div>
+              <div style={{ fontFamily: font.mono, fontSize: "13px", color: dragOver ? color.green : color.text8, letterSpacing: ".1em", transition: "color .15s", marginBottom: "4px" }}>DROP FILE OR CLICK TO BROWSE</div>
+              <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.text8 }}>.md or .txt</div>
             </>
           )}
         </div>
@@ -553,9 +553,9 @@ export default function SkillLint() {
             <div style={{ fontSize: "14px", color: color.text4, lineHeight: 1.6, marginBottom: "8px" }}>{fileWarning}</div>
             <button
               onClick={() => setFileWarning(null)}
-              style={{ background: "none", border: "none", padding: 0, fontFamily: font.mono, fontSize: "13px", color: color.textA, cursor: "pointer" }}
+              style={{ background: "none", border: "none", padding: 0, fontFamily: font.mono, fontSize: "13px", color: color.text8, cursor: "pointer" }}
               onMouseEnter={e => e.currentTarget.style.color = color.text4}
-              onMouseLeave={e => e.currentTarget.style.color = color.textA}
+              onMouseLeave={e => e.currentTarget.style.color = color.text8}
             >Proceed anyway</button>
           </div>
         )}
@@ -563,7 +563,7 @@ export default function SkillLint() {
         {/* Paste textarea — only when no file */}
         {!file && (
           <div>
-            <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text9, letterSpacing: ".1em", marginTop: "24px", marginBottom: "8px" }}>OR PASTE CONTENT</div>
+            <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text8, letterSpacing: ".1em", marginTop: "24px", marginBottom: "8px" }}>OR PASTE CONTENT</div>
             <textarea value={content} onChange={e => { setContent(e.target.value); setStaticResult(null); setFileWarning(null); }}
               placeholder="Paste skill file content..."
               style={{
@@ -607,7 +607,7 @@ export default function SkillLint() {
                   />
                 );
               })}
-              <div style={{ marginTop: "12px", fontFamily: font.mono, fontSize: "11px", color: color.textA, lineHeight: 1.6 }}>
+              <div style={{ marginTop: "12px", fontFamily: font.mono, fontSize: "11px", color: color.text8, lineHeight: 1.6 }}>
                 {staticResult.heuristicsEvaluated} of 75 heuristics — add key in Settings for full evaluation
               </div>
             </div>
@@ -667,8 +667,8 @@ export default function SkillLint() {
                 style={{
                   width: "100%", padding: "0", height: "52px",
                   background: color.surface3,
-                  color: color.textA,
-                  border: border.default,
+                  color: color.text8,
+                  border: "1px solid #333",
                   borderRadius: radius.lg,
                   fontFamily: font.mono, fontSize: "13px",
                   letterSpacing: ".1em", fontWeight: "600",
@@ -676,7 +676,7 @@ export default function SkillLint() {
                   transition: "all .15s"
                 }}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = color.surface7; e.currentTarget.style.color = color.textA; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.color = color.text8; }}
               >RUN FULL EVALUATION — ADD KEY IN SETTINGS</button>
             </>
           )}
@@ -696,7 +696,7 @@ export default function SkillLint() {
       </div>
       <div style={{ textAlign: "center" }}>
         <div style={{ fontFamily: font.mono, fontSize: "15px", color: "#e8e8e8", letterSpacing: ".08em", minHeight: "24px" }}>{LOADING_MSGS[msgIdx]}</div>
-        <div style={{ marginTop: "10px", fontFamily: font.mono, fontSize: "12px", color: "#666" }}>{file?.name || "pasted content"}</div>
+        <div style={{ marginTop: "10px", fontFamily: font.mono, fontSize: "12px", color: color.text7 }}>{file?.name || "pasted content"}</div>
       </div>
     </div>
   );
@@ -797,18 +797,18 @@ export default function SkillLint() {
               style={{
                 background: "none", border: "none", cursor: "pointer", padding: 0,
                 fontFamily: font.mono, fontSize: "11px",
-                color: color.text9, letterSpacing: ".08em", transition: "color .15s"
+                color: color.text8, letterSpacing: ".08em", transition: "color .15s"
               }}
               onMouseEnter={e => e.currentTarget.style.color = color.red}
-              onMouseLeave={e => e.currentTarget.style.color = color.text9}
+              onMouseLeave={e => e.currentTarget.style.color = color.text8}
             >CLEAR ALL</button>
           )}
         </div>
 
         {history.length === 0 ? (
           <div style={{ paddingTop: "60px", textAlign: "center" }}>
-            <div style={{ fontFamily: font.mono, fontSize: "13px", color: color.textB, marginBottom: "12px" }}>—</div>
-            <div style={{ fontSize: "14px", color: color.text9, lineHeight: 1.7 }}>
+            <div style={{ fontFamily: font.mono, fontSize: "13px", color: color.text8, marginBottom: "12px" }}>—</div>
+            <div style={{ fontSize: "14px", color: color.text8, lineHeight: 1.7 }}>
               Run your first evaluation to see results here.
             </div>
           </div>
@@ -824,7 +824,7 @@ export default function SkillLint() {
             </div>
             <div onClick={() => loadEntry(entry)} style={{ cursor: "pointer" }}>
               <div style={{ fontSize: "14px", color: color.text4, marginBottom: "4px", fontWeight: "400" }}>{entry.filename}</div>
-              <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text9 }}>
+              <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text8 }}>
                 {new Date(entry.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </div>
             </div>
@@ -844,10 +844,10 @@ export default function SkillLint() {
                 style={{
                   background: "none", border: "none", cursor: "pointer", padding: 0,
                   fontFamily: font.mono, fontSize: "14px",
-                  color: color.textB, lineHeight: 1, transition: "color .15s"
+                  color: color.text8, lineHeight: 1, transition: "color .15s"
                 }}
                 onMouseEnter={e => e.currentTarget.style.color = color.red}
-                onMouseLeave={e => e.currentTarget.style.color = color.textB}
+                onMouseLeave={e => e.currentTarget.style.color = color.text8}
               >×</button>
             </div>
           </div>
@@ -869,7 +869,7 @@ export default function SkillLint() {
 
           {/* Account section */}
           <div style={{ marginBottom: "48px" }}>
-            <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text9, letterSpacing: ".15em", marginBottom: "16px" }}>ACCOUNT</div>
+            <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text8, letterSpacing: ".15em", marginBottom: "16px" }}>ACCOUNT</div>
             <div
               style={{ padding: "20px 24px", background: color.surface1, border: border.faint, borderRadius: radius.lg, transition: "border-color .15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = color.brand}
@@ -899,13 +899,13 @@ export default function SkillLint() {
 
           {/* API Key section */}
           <div style={{ marginBottom: "48px" }}>
-            <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text9, letterSpacing: ".15em", marginBottom: "16px" }}>ANTHROPIC API KEY</div>
+            <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text8, letterSpacing: ".15em", marginBottom: "16px" }}>ANTHROPIC API KEY</div>
             <div
               style={{ padding: "20px 24px", background: color.surface1, border: border.faint, borderRadius: radius.lg, transition: "border-color .15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = color.brand}
               onMouseLeave={e => e.currentTarget.style.borderColor = color.surface6}
             >
-              <div style={{ fontSize: "13px", color: color.text9, lineHeight: 1.7, marginBottom: "20px" }}>
+              <div style={{ fontSize: "13px", color: color.text8, lineHeight: 1.7, marginBottom: "20px" }}>
                 Stored in your browser only. Each evaluation forwards it directly to Anthropic and nowhere else.
               </div>
               <KeyInput onKeySet={() => setHasKey(true)} onKeyClear={() => setHasKey(false)} />
@@ -914,7 +914,7 @@ export default function SkillLint() {
 
           {/* Data section */}
           <div>
-            <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text9, letterSpacing: ".15em", marginBottom: "16px" }}>DATA</div>
+            <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text8, letterSpacing: ".15em", marginBottom: "16px" }}>DATA</div>
             <div
               style={{ padding: "20px 24px", background: color.surface1, border: border.faint, borderRadius: radius.lg, transition: "border-color .15s" }}
               onMouseEnter={e => e.currentTarget.style.borderColor = color.brand}
@@ -923,7 +923,7 @@ export default function SkillLint() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div>
                   <div style={{ fontSize: "14px", color: color.text8, marginBottom: "4px" }}>Evaluation history</div>
-                  <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.text9 }}>
+                  <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.text8 }}>
                     {history.length} stored
                   </div>
                 </div>

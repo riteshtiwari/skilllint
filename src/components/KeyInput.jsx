@@ -61,18 +61,18 @@ export function KeyInput({ onKeySet, onKeyClear }) {
   if (saved) return (
     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
       <span style={{ fontFamily: font.mono, fontSize: "12px", color: color.green }}>key set</span>
-      <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.textB }}>sk-ant-...••••</span>
+      <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.text7 }}>sk-ant-...••••</span>
       {loadUrl() !== DEFAULT_API_URL && (
-        <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.textB }}>· proxy</span>
+        <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.text7 }}>· proxy</span>
       )}
       <button onClick={clear} style={{
         marginLeft: "auto", background: "none", border: "none",
-        color: color.textB, cursor: "pointer", fontSize: "11px",
+        color: color.text7, cursor: "pointer", fontSize: "11px",
         fontFamily: font.mono, letterSpacing: ".08em", padding: 0,
         transition: "color 0.15s"
       }}
       onMouseEnter={e => e.currentTarget.style.color = color.brand}
-      onMouseLeave={e => e.currentTarget.style.color = color.textB}
+      onMouseLeave={e => e.currentTarget.style.color = color.text7}
       >CLEAR</button>
     </div>
   );
@@ -118,7 +118,7 @@ export function KeyInput({ onKeySet, onKeyClear }) {
 
       {/* API URL */}
       <div style={{ marginBottom: inputError ? "6px" : "8px" }}>
-        <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.textC, letterSpacing: ".1em", marginBottom: "6px" }}>
+        <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text8, letterSpacing: ".1em", marginBottom: "6px" }}>
           API URL — change only if using a proxy
         </div>
         <input
@@ -130,7 +130,7 @@ export function KeyInput({ onKeySet, onKeyClear }) {
           style={{
             width: "100%", background: color.surface0,
             border: `1px solid ${color.surface6}`, borderRadius: radius.md,
-            padding: "0 12px", height: "38px", color: urlDirty && apiUrl !== DEFAULT_API_URL ? color.text4 : color.textC,
+            padding: "0 12px", height: "38px", color: urlDirty && apiUrl !== DEFAULT_API_URL ? color.text4 : color.text8,
             fontFamily: font.mono, fontSize: "12px", outline: "none",
             boxSizing: "border-box", transition: "border-color 0.15s"
           }}
