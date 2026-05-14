@@ -7,6 +7,7 @@ import { Landing } from "./components/Landing";
 import { HamburgerMenu } from "./components/HamburgerMenu";
 import { runStaticAnalysis } from "./lib/staticAnalysis";
 import { saveEvaluation, loadHistory, deleteEvaluation, deleteAllEvaluations } from "./lib/history";
+import { classifyError } from "./lib/errors";
 
 const CATEGORIES = [
   { id: "discoverability",       label: "Discoverability",        weight: 15 },
@@ -41,6 +42,57 @@ function looksLikeSkillFile(text) {
   return hasDescriptionOrTrigger || hasInstructionalLanguage;
 }
 
+// Debounced window width — lazy initial state avoids a mount-flash on first render.
+// Cleans up both the event listener and the pending timeout on unmount.
+function useWindowWidth() {
+  const [width, setWidth] = useState(() => window.innerWidth);
+  useEffect(() => {
+    let timeout;
+    const handler = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => setWidth(window.innerWidth), 80);
+    };
+    window.addEventListener("resize", handler);
+    return () => { window.removeEventListener("resize", handler); clearTimeout(timeout); };
+  }, []);
+  return width;
+}
+
+function ErrorCard({ error, onRetry, onSettings }) {
+  const { message, action } = classifyError(error);
+  const btnStyle = {
+    background: "none", border: "1px solid #333", borderRadius: radius.md,
+    padding: "6px 14px", cursor: "pointer", fontFamily: font.mono,
+    fontSize: "11px", color: color.text8, letterSpacing: ".06em", transition: "all .15s",
+  };
+  return (
+    <div style={{
+      marginTop: "20px", padding: "16px 20px",
+      background: color.bgError, border: `1px solid ${color.borderError}`,
+      borderLeft: `3px solid ${color.red}`, borderRadius: radius.md,
+    }}>
+      <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.red, letterSpacing: ".12em", marginBottom: "8px" }}>ERROR</div>
+      <div style={{ fontSize: "13px", color: color.text5, lineHeight: 1.6, marginBottom: action !== "none" ? "14px" : 0 }}>{message}</div>
+      {action === "retry" && (
+        <button
+          style={btnStyle}
+          onClick={onRetry}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.color = color.text8; }}
+        >Try again</button>
+      )}
+      {action === "settings" && (
+        <button
+          style={btnStyle}
+          onClick={onSettings}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.color = color.text8; }}
+        >Go to Settings →</button>
+      )}
+    </div>
+  );
+}
+
 function NavBtn({ label, onClick }) {
   return (
     <button onClick={onClick} style={{
@@ -55,11 +107,11 @@ function NavBtn({ label, onClick }) {
   );
 }
 
-function Nav({ onLogoClick, right, center }) {
+function Nav({ onLogoClick, right, center, isMobile }) {
   return (
     <nav style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 48px", height: "60px", borderBottom: border.strong,
+      padding: isMobile ? "0 16px" : "0 48px", height: "60px", borderBottom: border.strong,
       position: "sticky", top: 0, background: color.bg, zIndex: 10
     }}>
       <button onClick={onLogoClick} style={{ display: "flex", alignItems: "center", gap: "10px", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
@@ -162,10 +214,11 @@ function ScoreArc({ score, size = 160 }) {
 }
 
 // ── CategoryRow ───────────────────────────────────────────────────────────────
-function CategoryRow({ cat, data, index }) {
+function CategoryRow({ cat, data, index, isMobile }) {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const hasIssues = data.issues?.length > 0;
+  const hp = isMobile ? 16 : 48; // horizontal padding of container
 
   return (
     <div style={{ borderBottom: `1px solid ${color.surface3}` }}>
@@ -174,47 +227,60 @@ function CategoryRow({ cat, data, index }) {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          display: "grid", gridTemplateColumns: "36px 1fr 180px 28px",
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr 28px" : "36px 1fr 180px 28px",
           alignItems: "center", gap: "16px",
           cursor: hasIssues ? "pointer" : "default",
           background: hovered ? color.surface4 : "transparent",
-          margin: "0 -48px",
-          padding: "20px 48px",
+          margin: `0 -${hp}px`,
+          padding: `20px ${hp}px`,
           transition: "background 0.15s",
         }}
       >
-        <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.text7 }}>
-          {String(index + 1).padStart(2, "0")}
-        </span>
+        {!isMobile && (
+          <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.text7 }}>
+            {String(index + 1).padStart(2, "0")}
+          </span>
+        )}
         <div>
           <div style={{ fontSize: "14px", color: color.text1, fontWeight: "500", marginBottom: "4px" }}>{cat.label}</div>
+          {isMobile && (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "6px 0" }}>
+              <span style={{ fontFamily: font.mono, fontSize: "13px", fontWeight: "600", color: monoScoreColor(data.score), borderBottom: monoScoreUnderline(data.score), paddingBottom: monoScoreUnderline(data.score) ? "1px" : undefined }}>{data.score}</span>
+              <div style={{ flex: 1, height: "3px", background: color.barTrack, borderRadius: "2px" }}>
+                <div style={{ height: "100%", width: `${data.score}%`, background: color.barFill, borderRadius: "2px" }} />
+              </div>
+            </div>
+          )}
           <div style={{ fontSize: "13px", color: color.text5, lineHeight: 1.6 }}>{data.summary}</div>
         </div>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ flex: 1, height: "4px", background: color.barTrack, borderRadius: "2px" }}>
-              <div style={{ height: "100%", width: `${data.score}%`, background: color.barFill, borderRadius: "2px", transition: "width 1s cubic-bezier(.4,0,.2,1)" }} />
+        {!isMobile && (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ flex: 1, height: "4px", background: color.barTrack, borderRadius: "2px" }}>
+                <div style={{ height: "100%", width: `${data.score}%`, background: color.barFill, borderRadius: "2px", transition: "width 1s cubic-bezier(.4,0,.2,1)" }} />
+              </div>
+              <div style={{ minWidth: "28px", textAlign: "right" }}>
+                <span style={{ fontFamily: font.mono, fontSize: "14px", fontWeight: "600", color: monoScoreColor(data.score), borderBottom: monoScoreUnderline(data.score), paddingBottom: monoScoreUnderline(data.score) ? "1px" : undefined }}>{data.score}</span>
+              </div>
             </div>
-            <div style={{ minWidth: "28px", textAlign: "right" }}>
-              <span style={{ fontFamily: font.mono, fontSize: "14px", fontWeight: "600", color: monoScoreColor(data.score), borderBottom: monoScoreUnderline(data.score), paddingBottom: monoScoreUnderline(data.score) ? "1px" : undefined }}>{data.score}</span>
-            </div>
+            <div style={{ marginTop: "5px", fontFamily: font.mono, fontSize: "10px", color: color.text7, letterSpacing: "0.1em" }}>{cat.weight}% WEIGHT</div>
           </div>
-          <div style={{ marginTop: "5px", fontFamily: font.mono, fontSize: "10px", color: color.text7, letterSpacing: "0.1em" }}>{cat.weight}% WEIGHT</div>
-        </div>
+        )}
         <div style={{ color: color.text6, fontSize: "16px", textAlign: "center", userSelect: "none", transition: "transform .2s", transform: open ? "rotate(45deg)" : "none" }}>
           {hasIssues ? "+" : "·"}
         </div>
       </div>
 
       {open && hasIssues && (
-        <div style={{ paddingBottom: "20px", paddingLeft: "52px" }}>
+        <div style={{ paddingBottom: "20px", paddingLeft: isMobile ? 0 : "52px" }}>
           {data.issues.map((issue, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", marginBottom: "1px" }}>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1px", marginBottom: "1px" }}>
               <div style={{ padding: "14px 16px", background: "rgba(248,113,113,0.04)" }}>
                 <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.red, letterSpacing: ".12em", marginBottom: "6px" }}>ISSUE</div>
                 <div style={{ fontSize: "13px", color: color.text6, lineHeight: 1.65 }}>{issue}</div>
               </div>
-              <div style={{ padding: "14px 16px", background: "rgba(74,222,128,0.03)", borderLeft: `1px solid ${color.surface3}` }}>
+              <div style={{ padding: "14px 16px", background: "rgba(74,222,128,0.03)", borderLeft: isMobile ? "none" : `1px solid ${color.surface3}`, borderTop: isMobile ? `1px solid ${color.surface3}` : "none" }}>
                 <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.green, letterSpacing: ".12em", marginBottom: "6px" }}>FIX</div>
                 <div style={{ fontSize: "13px", color: color.text6, lineHeight: 1.65 }}>{data.fixes?.[i] || "—"}</div>
               </div>
@@ -223,7 +289,7 @@ function CategoryRow({ cat, data, index }) {
         </div>
       )}
       {open && !hasIssues && (
-        <div style={{ paddingBottom: "16px", paddingLeft: "52px", fontFamily: font.mono, fontSize: "12px", color: color.green }}>No issues</div>
+        <div style={{ paddingBottom: "16px", paddingLeft: isMobile ? 0 : "52px", fontFamily: font.mono, fontSize: "12px", color: color.green }}>No issues</div>
       )}
     </div>
   );
@@ -249,6 +315,7 @@ export default function SkillLint() {
   const fileRef = useRef();
   const debounceRef = useRef(null);
   const prevSignedIn = useRef(false);
+  const isMobile = useWindowWidth() < 640;
 
   const getToken = useCallback(() =>
     session?.getToken({ template: "supabase" }), [session]);
@@ -318,6 +385,10 @@ export default function SkillLint() {
 
   const evaluate = async (apiKey) => {
     if (!content.trim()) return;
+    if (content.length > 50000) {
+      setError("File too large. Keep it under 50,000 characters.");
+      return;
+    }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 60000);
     setView("loading"); setMsgIdx(0); setError(null);
@@ -434,7 +505,12 @@ export default function SkillLint() {
     });
   };
 
-  const loadEntry = (entry) => { setResult(entry.result); setFile({ name: entry.filename }); setView("result"); };
+  // Guard against null result: a history entry with missing result data should not
+  // navigate to the result view — it would render a blank screen.
+  const loadEntry = (entry) => {
+    if (!entry.result) return;
+    setResult(entry.result); setFile({ name: entry.filename }); setError(null); setView("result");
+  };
 
   const appMenu = (
     <HamburgerMenu
@@ -473,24 +549,24 @@ export default function SkillLint() {
 
 
   // ── LANDING ─────────────────────────────────────────────────────────────────
-  if (view === "landing") return <Landing onStart={() => setView("upload")} />;
+  if (view === "landing") return <Landing onStart={() => setView("upload")} isMobile={isMobile} />;
 
   // ── UPLOAD ──────────────────────────────────────────────────────────────────
   if (view === "upload") return (
     <div style={BASE}>
-      <Nav onLogoClick={() => setView("landing")} right={appMenu} />
+      <Nav onLogoClick={() => setView("landing")} right={appMenu} isMobile={isMobile} />
 
-      <div style={{ maxWidth: "860px", margin: "0 auto", padding: "0 64px" }}>
+      <div style={{ maxWidth: "860px", margin: "0 auto", padding: isMobile ? "0 20px" : "0 64px" }}>
 
         {/* Hero */}
-        <div style={{ paddingTop: "52px" }}>
+        <div style={{ paddingTop: isMobile ? "36px" : "52px" }}>
           <div style={{
             fontFamily: font.mono, fontSize: "11px", color: color.text8,
             letterSpacing: ".18em", marginBottom: "16px"
           }}>
             80 HEURISTICS · 10 CATEGORIES
           </div>
-          <h1 style={{ fontSize: "56px", fontWeight: "300", lineHeight: 1.1, margin: "0 0 20px", letterSpacing: "-.02em", color: color.text2 }}>
+          <h1 style={{ fontSize: isMobile ? "38px" : "56px", fontWeight: "300", lineHeight: 1.1, margin: "0 0 20px", letterSpacing: "-.02em", color: color.text2 }}>
             Lint your<br /><em style={{ fontStyle: "italic", color: color.text8 }}>skill files.</em>
           </h1>
           <p style={{ fontSize: "16px", color: color.text8, fontWeight: "300", lineHeight: 1.7, margin: "0 0 40px" }}>
@@ -564,7 +640,7 @@ export default function SkillLint() {
         {!file && (
           <div>
             <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text8, letterSpacing: ".1em", marginTop: "24px", marginBottom: "8px" }}>OR PASTE CONTENT</div>
-            <textarea value={content} onChange={e => { setContent(e.target.value); setStaticResult(null); setFileWarning(null); }}
+            <textarea value={content} onChange={e => { setContent(e.target.value); setStaticResult(null); setFileWarning(null); setError(null); }}
               placeholder="Paste skill file content..."
               style={{
                 width: "100%", height: "80px", background: color.surface1,
@@ -615,9 +691,11 @@ export default function SkillLint() {
         )}
 
         {error && (
-          <div style={{ marginTop: "20px", padding: "12px 16px", background: color.bgError, border: `1px solid ${color.borderError}`, borderRadius: radius.md }}>
-            <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.red }}>{error}</span>
-          </div>
+          <ErrorCard
+            error={error}
+            onRetry={() => setError(null)}
+            onSettings={() => { setError(null); setView("settings"); }}
+          />
         )}
 
         {/* Action buttons */}
@@ -705,20 +783,28 @@ export default function SkillLint() {
   if (view === "result" && result) {
     const col = scoreColor(result.overall_score);
     const stats = result.file_stats || {};
+    const rp = isMobile ? 16 : 48; // result container horizontal padding
     return (
       <div style={BASE}>
-        <Nav onLogoClick={() => setView("landing")} right={
+        <Nav onLogoClick={() => setView("landing")} isMobile={isMobile} right={
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <NavBtn label="EXPORT .MD" onClick={exportMd} />
+            {!isMobile && <NavBtn label="EXPORT .MD" onClick={exportMd} />}
             <NavBtn label="NEW FILE" onClick={reset} />
             {appMenu}
           </div>
         } />
-        <div style={{ maxWidth: "760px", margin: "0 auto", padding: "0 48px 80px" }}>
+        <div style={{ maxWidth: "760px", margin: "0 auto", padding: `0 ${rp}px 80px` }}>
 
           {/* Hero */}
-          <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: "40px", alignItems: "center", padding: "52px 0 40px", borderBottom: `1px solid ${color.surface3}` }}>
-            <ScoreArc score={result.overall_score} size={160} />
+          <div style={{
+            display: isMobile ? "flex" : "grid",
+            flexDirection: isMobile ? "column" : undefined,
+            gridTemplateColumns: isMobile ? undefined : "160px 1fr",
+            gap: "32px", alignItems: isMobile ? "flex-start" : "center",
+            padding: `${isMobile ? 32 : 52}px 0 40px`,
+            borderBottom: `1px solid ${color.surface3}`,
+          }}>
+            <ScoreArc score={result.overall_score} size={isMobile ? 130 : 160} />
             <div>
               <div style={{ fontFamily: font.mono, fontSize: "13px", color: color.text8, marginBottom: "8px" }}>
                 {file?.name || "pasted content"}
@@ -757,16 +843,18 @@ export default function SkillLint() {
             </div>
           )}
 
-          {/* Breakdown header */}
-          <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 180px 28px", gap: "16px", padding: "12px 0", borderBottom: `1px solid ${color.surface3}` }}>
-            {["#", "CATEGORY", "SCORE", ""].map((h, i) => (
-              <span key={i} style={{ fontFamily: font.mono, fontSize: "10px", color: color.text6, letterSpacing: ".12em" }}>{h}</span>
-            ))}
-          </div>
+          {/* Breakdown header — desktop only (mobile has no separate columns to label) */}
+          {!isMobile && (
+            <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 180px 28px", gap: "16px", padding: "12px 0", borderBottom: `1px solid ${color.surface3}` }}>
+              {["#", "CATEGORY", "SCORE", ""].map((h, i) => (
+                <span key={i} style={{ fontFamily: font.mono, fontSize: "10px", color: color.text6, letterSpacing: ".12em" }}>{h}</span>
+              ))}
+            </div>
+          )}
 
           {CATEGORIES.map((cat, i) => {
             const d = result.categories?.[cat.id];
-            return d ? <CategoryRow key={cat.id} cat={cat} data={d} index={i} /> : null;
+            return d ? <CategoryRow key={cat.id} cat={cat} data={d} index={i} isMobile={isMobile} /> : null;
           })}
 
         </div>
@@ -781,8 +869,8 @@ export default function SkillLint() {
   // ── HISTORY ─────────────────────────────────────────────────────────────────
   if (view === "history") return (
     <div style={BASE}>
-      <Nav onLogoClick={() => setView("landing")} right={<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>{backBtn}{appMenu}</div>} />
-      <div style={{ maxWidth: "720px", margin: "0 auto", padding: "52px 48px 80px" }}>
+      <Nav onLogoClick={() => setView("landing")} isMobile={isMobile} right={<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>{backBtn}{appMenu}</div>} />
+      <div style={{ maxWidth: "720px", margin: "0 auto", padding: isMobile ? "32px 20px 60px" : "52px 48px 80px" }}>
 
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "40px" }}>
           <div>
@@ -862,8 +950,8 @@ export default function SkillLint() {
     const name = user?.fullName || user?.firstName;
     return (
       <div style={BASE}>
-        <Nav onLogoClick={() => setView("landing")} right={<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>{backBtn}{appMenu}</div>} />
-        <div style={{ maxWidth: "640px", margin: "0 auto", padding: "52px 48px 80px" }}>
+        <Nav onLogoClick={() => setView("landing")} isMobile={isMobile} right={<div style={{ display: "flex", alignItems: "center", gap: "10px" }}>{backBtn}{appMenu}</div>} />
+        <div style={{ maxWidth: "640px", margin: "0 auto", padding: isMobile ? "32px 20px 60px" : "52px 48px 80px" }}>
 
           <div style={{ fontFamily: font.mono, fontSize: "11px", color: color.text8, letterSpacing: ".18em", marginBottom: "40px" }}>SETTINGS</div>
 

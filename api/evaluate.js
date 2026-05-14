@@ -30,6 +30,14 @@ function json(body, status, cors) {
 const SENTINEL_DONE  = "\n__DONE__\n";
 const SENTINEL_ERROR = "\n__ERROR__:";
 
+// Rate limiting: deliberately deferred.
+// This endpoint requires the caller's own Anthropic key (BYOK), so abuse burns the
+// caller's quota, not ours. Vercel Edge Functions run in stateless V8 isolates with no
+// shared memory between invocations — an in-memory Map would be per-isolate and offer no
+// meaningful protection across concurrent requests. If server-side rate limiting becomes
+// necessary in a future wave, implement it with an external KV store (Upstash Redis or
+// Vercel KV). The 50,000-character content limit in the handler below is the main guard
+// against large-payload abuse.
 export default async function handler(req) {
   const cors = getCorsHeaders(req);
 
@@ -124,8 +132,14 @@ export default async function handler(req) {
             try { event = JSON.parse(data); } catch { continue; }
 
             if (event.type === "error") {
-              // Anthropic sent an error event mid-stream (rate limit, overload, etc.)
-              const msg = event.error?.message || "Anthropic API error";
+              // Anthropic sent an error event mid-stream. Normalize to stable strings so
+              // the client's classifyError() doesn't match raw Anthropic copy that could change.
+              const type = event.error?.type || "";
+              let msg;
+              if (type === "rate_limit_error")    msg = "Rate limit hit. Wait a moment and try again.";
+              else if (type === "overloaded_error") msg = "Anthropic is overloaded right now. Try again in a few seconds.";
+              else if (type === "authentication_error") msg = "Invalid API key. Check your key at console.anthropic.com.";
+              else msg = event.error?.message || "Anthropic API error";
               await writer.write(encoder.encode(`${SENTINEL_ERROR}${msg}\n`));
               failed = true;
               break;

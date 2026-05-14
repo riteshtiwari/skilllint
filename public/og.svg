@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#080808"/>
+
+  <!-- Right panel tint -->
+  <rect x="730" y="0" width="470" height="630" fill="#0c0c0c"/>
+
+  <!-- Structural lines -->
+  <line x1="0" y1="82" x2="1200" y2="82" stroke="#1a1a1a" stroke-width="1"/>
+  <line x1="730" y1="82" x2="730" y2="548" stroke="#1a1a1a" stroke-width="1"/>
+  <line x1="0" y1="548" x2="1200" y2="548" stroke="#1a1a1a" stroke-width="1"/>
+
+  <!-- Nav: SL mark -->
+  <rect x="64" y="24" width="34" height="34" fill="none" stroke="#81F7E5" stroke-width="1.5"/>
+  <text x="81" y="46" text-anchor="middle" font-family="monospace" font-size="12" font-weight="700" fill="#81F7E5" letter-spacing="1">SL</text>
+
+  <!-- Nav: wordmark -->
+  <text x="114" y="46" font-family="monospace" font-size="15" fill="#ccc" letter-spacing="2">skilllint<tspan fill="#555">.dev</tspan></text>
+
+  <!-- Eyebrow -->
+  <text x="64" y="140" font-family="monospace" font-size="11" fill="#444" letter-spacing="5">SKILL FILE QUALITY</text>
+
+  <!-- Headline line 1 -->
+  <text x="64" y="218" font-family="monospace" font-size="62" font-weight="300" fill="#f0f0f0" letter-spacing="-1">Your skill files</text>
+
+  <!-- Headline line 2 -->
+  <text x="64" y="294" font-family="monospace" font-size="62" font-weight="300" fill="#f0f0f0" letter-spacing="-1">are <tspan fill="#3a3a3a" font-style="italic">probably</tspan></text>
+
+  <!-- Headline line 3 -->
+  <text x="64" y="370" font-family="monospace" font-size="62" font-weight="300" fill="#f0f0f0" letter-spacing="-1">broken.</text>
+
+  <!-- Sub text -->
+  <text x="64" y="430" font-family="monospace" font-size="15" fill="#555" letter-spacing="1">80 heuristics · 10 categories · specific rewrites</text>
+
+  <!-- Score arc track: center (955, 290), r=130 -->
+  <!-- circumference = 2 * pi * 130 = 816.8 -->
+  <circle cx="955" cy="290" r="130" fill="none" stroke="#252525" stroke-width="9"/>
+
+  <!-- Score arc fill: 63% = 0.63 * 816.8 = 514.6 -->
+  <circle cx="955" cy="290" r="130" fill="none" stroke="#484848" stroke-width="9"
+    stroke-dasharray="514.6 816.8" stroke-linecap="round"
+    transform="rotate(-90 955 290)"/>
+
+  <!-- Score number -->
+  <text x="955" y="307" text-anchor="middle" font-family="monospace" font-size="76" font-weight="700" fill="#d0d0d0">63</text>
+
+  <!-- Score caption -->
+  <text x="955" y="334" text-anchor="middle" font-family="monospace" font-size="10" fill="#888" letter-spacing="4">NEEDS WORK</text>
+
+  <!-- Category bars — 8 bars below the arc -->
+  <!-- bar track: x=815 to x=1095, width=280. bar y starts at 458 -->
+
+  <rect x="815" y="458" width="280" height="3" fill="#1e1e1e" rx="1.5"/>
+  <rect x="815" y="458" width="117" height="3" fill="#3a3a3a" rx="1.5"/>
+
+  <rect x="815" y="469" width="280" height="3" fill="#1e1e1e" rx="1.5"/>
+  <rect x="815" y="469" width="162" height="3" fill="#484848" rx="1.5"/>
+
+  <rect x="815" y="480" width="280" height="3" fill="#1e1e1e" rx="1.5"/>
+  <rect x="815" y="480" width="199" height="3" fill="#585858" rx="1.5"/>
+
+  <rect x="815" y="491" width="280" height="3" fill="#1e1e1e" rx="1.5"/>
+  <rect x="815" y="491" width="182" height="3" fill="#525252" rx="1.5"/>
+
+  <rect x="815" y="502" width="280" height="3" fill="#1e1e1e" rx="1.5"/>
+  <rect x="815" y="502" width="106" height="3" fill="#363636" rx="1.5"/>
+
+  <rect x="815" y="513" width="280" height="3" fill="#1e1e1e" rx="1.5"/>
+  <rect x="815" y="513" width="56" height="3" fill="#2a2a2a" rx="1.5"/>
+
+  <rect x="815" y="524" width="280" height="3" fill="#1e1e1e" rx="1.5"/>
+  <rect x="815" y="524" width="246" height="3" fill="#787878" rx="1.5"/>
+
+  <rect x="815" y="535" width="280" height="3" fill="#1e1e1e" rx="1.5"/>
+  <rect x="815" y="535" width="207" height="3" fill="#606060" rx="1.5"/>
+
+  <!-- Footer -->
+  <text x="64" y="588" font-family="monospace" font-size="12" fill="#333" letter-spacing="3">skilllint.dev</text>
+
+</svg>

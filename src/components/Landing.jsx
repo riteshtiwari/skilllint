@@ -88,7 +88,7 @@ function CatRow({ cat, last }) {
   );
 }
 
-export function Landing({ onStart }) {
+export function Landing({ onStart, isMobile }) {
   const { isLoaded, isSignedIn } = useUser();
   const { openSignIn } = useClerk();
 
@@ -106,7 +106,7 @@ export function Landing({ onStart }) {
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, height: "56px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 48px", borderBottom: border.strong, background: color.bgLanding, zIndex: 100
+        padding: isMobile ? "0 16px" : "0 48px", borderBottom: border.strong, background: color.bgLanding, zIndex: 100
       }}>
         {/* Logo */}
         <div
@@ -161,18 +161,22 @@ export function Landing({ onStart }) {
         </div>
       </nav>
 
-      {/* Two-column grid */}
+      {/* Two-column grid — collapses to single column on mobile */}
       <div style={{
         position: "fixed", inset: "56px 0 0 0",
-        display: "grid", gridTemplateColumns: "1fr 1fr", overflow: "hidden"
+        display: isMobile ? "flex" : "grid",
+        flexDirection: isMobile ? "column" : undefined,
+        gridTemplateColumns: isMobile ? undefined : "1fr 1fr",
+        overflow: isMobile ? "auto" : "hidden",
       }}>
 
         {/* Left panel */}
         <div style={{
-          display: "flex", flexDirection: "column", justifyContent: "center",
-          padding: "0 64px 0 72px",
-          borderRight: border.strong,
-          position: "relative"
+          display: "flex", flexDirection: "column", justifyContent: isMobile ? "flex-start" : "center",
+          padding: isMobile ? "40px 24px 120px" : "0 64px 0 72px",
+          borderRight: isMobile ? "none" : border.strong,
+          position: "relative",
+          flexShrink: 0,
         }}>
           <div className="sl-eyebrow" style={{
             fontFamily: font.mono, fontSize: "10px", color: color.text8,
@@ -184,7 +188,7 @@ export function Landing({ onStart }) {
           </div>
 
           <h1 className="sl-h1" style={{
-            fontSize: "58px", fontWeight: "200", lineHeight: 1.06,
+            fontSize: isMobile ? "38px" : "58px", fontWeight: "200", lineHeight: 1.06,
             letterSpacing: "-0.03em", color: color.text1, margin: "0 0 28px"
           }}>
             Your skill files<br />
@@ -233,8 +237,11 @@ export function Landing({ onStart }) {
           </div>
 
           <div className="sl-stats" style={{
-            position: "absolute", bottom: "48px", left: "72px",
-            display: "flex", gap: "40px"
+            position: isMobile ? "static" : "absolute",
+            bottom: isMobile ? undefined : "48px",
+            left: isMobile ? undefined : "72px",
+            display: "flex", gap: isMobile ? "28px" : "40px",
+            marginTop: isMobile ? "48px" : undefined,
           }}>
             {[
               { num: "80",  label: "Heuristics" },
@@ -249,8 +256,9 @@ export function Landing({ onStart }) {
           </div>
         </div>
 
-        {/* Right panel — animated mock report */}
-        <div style={{ background: color.bgLanding, position: "relative", overflow: "hidden" }}>
+        {/* Right panel — animated mock report. Hidden on mobile: 800 particle nodes are
+            not worth rendering when the panel isn't visible. */}
+        {!isMobile && <div style={{ background: color.bgLanding, position: "relative", overflow: "hidden" }}>
 
           {/* Processing dots — static field, group pulses as one unit */}
           <div className="sl-dot-exit" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
@@ -317,7 +325,7 @@ export function Landing({ onStart }) {
             </div>
           </div>
 
-        </div>
+        </div>}
 
       </div>
     </div>
