@@ -26,6 +26,10 @@ function json(body, status, cors) {
   });
 }
 
+// Sentinels written at stream end so the client can detect completion vs truncation
+const SENTINEL_DONE  = "\n__DONE__\n";
+const SENTINEL_ERROR = "\n__ERROR__:";
+
 export default async function handler(req) {
   const cors = getCorsHeaders(req);
 
@@ -91,7 +95,6 @@ export default async function handler(req) {
       return json({ error: "Anthropic API error", detail: err.error?.message }, 500, cors);
     }
 
-    // Stream text deltas through to the client
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
     const encoder = new TextEncoder();
@@ -100,11 +103,16 @@ export default async function handler(req) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      let failed = false;
 
       try {
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            // Flush any remaining bytes held in the decoder
+            buffer += decoder.decode();
+            break;
+          }
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split("\n");
           buffer = lines.pop();
@@ -112,21 +120,40 @@ export default async function handler(req) {
             if (!line.startsWith("data: ")) continue;
             const data = line.slice(6).trim();
             if (data === "[DONE]") continue;
-            try {
-              const event = JSON.parse(data);
-              if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
-                await writer.write(encoder.encode(event.delta.text));
-              }
-            } catch (e) { void e; /* skip malformed SSE lines */ }
+            let event;
+            try { event = JSON.parse(data); } catch { continue; }
+
+            if (event.type === "error") {
+              // Anthropic sent an error event mid-stream (rate limit, overload, etc.)
+              const msg = event.error?.message || "Anthropic API error";
+              await writer.write(encoder.encode(`${SENTINEL_ERROR}${msg}\n`));
+              failed = true;
+              break;
+            }
+            if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+              await writer.write(encoder.encode(event.delta.text));
+            }
           }
+          if (failed) break;
         }
+        if (!failed) {
+          await writer.write(encoder.encode(SENTINEL_DONE));
+        }
+      } catch (err) {
+        const msg = err?.message || "Stream read error";
+        await writer.write(encoder.encode(`${SENTINEL_ERROR}${msg}\n`)).catch(() => {});
       } finally {
-        await writer.close();
+        await writer.close().catch(() => {});
       }
     })();
 
     return new Response(readable, {
-      headers: { "Content-Type": "text/plain; charset=utf-8", ...cors },
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+        ...cors,
+      },
     });
 
   } catch (err) {

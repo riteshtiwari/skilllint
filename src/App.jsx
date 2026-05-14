@@ -332,24 +332,36 @@ export default function SkillLint() {
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
-      // Error responses are JSON; success is a plain-text stream of JSON
+      // Error responses are JSON; success is a streamed text response
       if (!res.ok) {
         let errData;
         try { errData = await res.json(); } catch { errData = {}; }
         throw new Error(errData.error || `Server error (${res.status})`);
       }
 
-      // Read the streamed text
+      // Read the streamed text, flushing decoder at end
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let raw = "";
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) { raw += decoder.decode(); break; }
         raw += decoder.decode(value, { stream: true });
       }
 
-      const clean = raw.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim();
+      // Check sentinel — if missing, stream was truncated before completion
+      const SENTINEL_DONE  = "\n__DONE__\n";
+      const SENTINEL_ERROR = "\n__ERROR__:";
+      if (raw.includes(SENTINEL_ERROR)) {
+        const msg = raw.split(SENTINEL_ERROR)[1]?.trim() || "API error during evaluation";
+        throw new Error(msg);
+      }
+      if (!raw.includes(SENTINEL_DONE)) {
+        throw new Error("Evaluation timed out mid-response. Try again.");
+      }
+
+      const body = raw.split(SENTINEL_DONE)[0];
+      const clean = body.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim();
       if (!clean) throw new Error("Empty response from evaluation. Try again.");
 
       let data;
