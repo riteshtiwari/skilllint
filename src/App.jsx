@@ -661,16 +661,16 @@ export default function SkillLint() {
 
   // ── LOADING ─────────────────────────────────────────────────────────────────
   if (view === "loading") return (
-    <div style={{ ...BASE, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "28px" }}>
-      <style>{`@keyframes bar { from { background:${color.surface3}; transform:scaleY(.5); } to { background:${color.surface8}; transform:scaleY(1); } }`}</style>
-      <div style={{ display: "flex", gap: "3px", alignItems: "flex-end", height: "36px" }}>
+    <div style={{ ...BASE, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "40px" }}>
+      <style>{`@keyframes bar { from { background:#333; transform:scaleY(.4); } to { background:#ccc; transform:scaleY(1); } }`}</style>
+      <div style={{ display: "flex", gap: "5px", alignItems: "flex-end", height: "64px" }}>
         {CATEGORIES.map((_, i) => (
-          <div key={i} style={{ width: "3px", height: "100%", background: color.surface3, borderRadius: "2px", animation: `bar 0.9s ease-in-out ${i * 0.09}s infinite alternate`, transformOrigin: "bottom" }} />
+          <div key={i} style={{ width: "4px", height: "100%", background: "#333", borderRadius: "2px", animation: `bar 0.9s ease-in-out ${i * 0.09}s infinite alternate`, transformOrigin: "bottom" }} />
         ))}
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: font.mono, fontSize: "13px", color: color.text8, letterSpacing: ".06em", minHeight: "20px" }}>{LOADING_MSGS[msgIdx]}</div>
-        <div style={{ marginTop: "8px", fontFamily: font.mono, fontSize: "11px", color: color.textA }}>{file?.name || "pasted content"}</div>
+        <div style={{ fontFamily: font.mono, fontSize: "15px", color: "#e8e8e8", letterSpacing: ".08em", minHeight: "24px" }}>{LOADING_MSGS[msgIdx]}</div>
+        <div style={{ marginTop: "10px", fontFamily: font.mono, fontSize: "12px", color: "#666" }}>{file?.name || "pasted content"}</div>
       </div>
     </div>
   );
