@@ -1,6 +1,6 @@
 # SkillLint
 
-Score your Claude skill files across 75 heuristics. Get specific rewrites for every failing dimension.
+Score your Claude skill files across 80 heuristics. Get specific rewrites for every failing dimension.
 
 ---
 
@@ -8,15 +8,15 @@ Score your Claude skill files across 75 heuristics. Get specific rewrites for ev
 
 Claude skill files are written everywhere with no quality bar. Bad ones silently degrade how Claude behaves — vague triggers that misfire, instructions that assume context Claude won't have, no output spec, no edge case coverage.
 
-SkillLint runs every skill file through a structured evaluation across 10 categories: discoverability, instruction quality, scope boundaries, structural integrity, token economics, consistency, robustness, examples, maintainability, and safety. Each category returns a score, a one-sentence verdict, and parallel issue/fix pairs with enough detail to act on immediately.
+SkillLint runs every skill file through a structured evaluation across 10 categories: discoverability, instruction quality, scope boundaries, structural integrity, token economics, consistency, robustness, examples, maintainability, and security. Each category returns a score, a one-sentence verdict, and parallel issue/fix pairs with enough detail to act on immediately.
 
-Static analysis runs free, in the browser, no account needed. Full 75-heuristic LLM evaluation requires an Anthropic API key — yours, not ours.
+Static analysis runs free, in the browser, no account needed. Full 80-heuristic LLM evaluation requires an Anthropic API key — yours, not ours.
 
 ---
 
 ## How it works
 
-Upload or paste a `.md` skill file. Static analysis runs immediately and scores roughly 22 of the 75 heuristics client-side. If you add an Anthropic API key, the full evaluation proxies through a Vercel Edge Function that forwards your key to the Anthropic API and returns the complete scored report.
+Upload or paste a `.md` skill file. Static analysis runs immediately and scores roughly 27 of the 80 heuristics client-side. If you add an Anthropic API key, the full evaluation proxies through a Vercel Edge Function that forwards your key to the Anthropic API and returns the complete scored report.
 
 Your key stays in `localStorage` — it's sent as an `X-Api-Key` header per request and never touches our server.
 

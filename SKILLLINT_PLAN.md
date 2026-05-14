@@ -68,7 +68,7 @@ These run entirely client-side or with cheap server computation. No Anthropic AP
 | Has output spec flag | Look for output/returns/produces patterns |
 | Section completeness | Detect headings with empty bodies |
 
-Score: 0-100 based on these static checks alone. Covers roughly 25 of the 75 heuristics.
+Score: 0-100 based on these static checks alone. Covers roughly 27 of the 80 heuristics.
 
 **Full tier — account required, Anthropic key required:**
 
@@ -89,7 +89,7 @@ Everything above plus all LLM-evaluated heuristics:
 - NL to skill generator
 - Failure mode simulator
 
-Score: full 75-heuristic weighted evaluation.
+Score: full 80-heuristic weighted evaluation.
 
 ### User Flow
 
@@ -493,7 +493,7 @@ export function runStaticAnalysis(text) {
       scope_boundaries_partial: scope,
       examples_partial: examples,
     },
-    heuristicsEvaluated: 22,     // of 75
+    heuristicsEvaluated: 27,     // of 80
     heuristicsRemaining: 53,     // need LLM
     needsLLM: true,
   };
@@ -1035,7 +1035,7 @@ insert into benchmark_stats (category, p10, p25, p50, p75, p90, sample_size) val
   ('robustness',            15, 28, 45, 62, 75, 0),
   ('examples_evidence',     10, 22, 40, 60, 75, 0),
   ('maintainability',       30, 45, 60, 72, 82, 0),
-  ('safety_side_effects',   50, 65, 78, 88, 95, 0);
+  ('security',              50, 65, 78, 88, 95, 0);
 
 -- ─── Row Level Security ───────────────────────────────────────────────────────
 
@@ -1304,7 +1304,7 @@ export default function LandingView() {
       <div style={{ maxWidth: "720px", margin: "0 auto", padding: "100px 48px 80px" }}>
         <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: "8px",
           color: "#333", letterSpacing: ".2em", marginBottom: "24px" }}>
-          SKILL FILE QUALITY · 75 HEURISTICS · 10 CATEGORIES
+          SKILL FILE QUALITY · 80 HEURISTICS · 10 CATEGORIES
         </div>
         <h1 style={{ fontSize: "56px", fontWeight: "300", lineHeight: 1.06,
           margin: "0 0 28px", letterSpacing: "-.03em", color: "#efefef" }}>
@@ -1334,7 +1334,7 @@ export default function LandingView() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px" }}>
           {[
             { label: "Free — no key needed", items: ["Markdown structure check", "Token estimate", "Preamble bloat detection", "Filler language scan", "Redundancy detection", "File stats"] },
-            { label: "Full — with Anthropic key", items: ["All 75 heuristics scored", "Conflict detection", "Trigger precision analysis", "Specific rewrites for every issue", "Live simulation", "Skill generator"] },
+            { label: "Full — with Anthropic key", items: ["All 80 heuristics scored", "Conflict detection", "Trigger precision analysis", "Specific rewrites for every issue", "Live simulation", "Skill generator"] },
           ].map((col, i) => (
             <div key={i} style={{ padding: "24px", background: i === 0 ? "#0a0a0a" : "#0c0c0a",
               border: "1px solid #141414" }}>
@@ -1823,7 +1823,7 @@ This lives in `src/constants/prompts.js` and is imported by Edge Functions.
 ```javascript
 export const SYSTEM_PROMPT = `You are SkillLint — a brutally honest evaluator of Claude skill files (.md files that instruct Claude how to perform specific tasks).
 
-Evaluate across 10 categories with 75 heuristics. Be direct. Do not inflate scores. A mediocre skill file should score 40-55. A good one 65-80. Exceptional ones 85+.
+Evaluate across 10 categories with 80 heuristics. Be direct. Do not inflate scores. A mediocre skill file should score 40-55. A good one 65-80. Exceptional ones 85+.
 
 SCORING SCALE:
 - 85-100: Exceptional. Production-ready. Almost nothing to fix.
@@ -1848,15 +1848,15 @@ Also return at the top level:
 
 CATEGORY WEIGHTS:
 - discoverability: 15%
-- instruction_quality: 20%
+- instruction_quality: 18%
 - scope_boundaries: 12%
-- structural_integrity: 8%
+- structural_integrity: 7%
 - token_economics: 10%
 - consistency_conflicts: 10%
 - robustness: 10%
-- examples_evidence: 8%
-- maintainability: 4%
-- safety_side_effects: 3%
+- examples_evidence: 7%
+- maintainability: 3%
+- security: 8%
 
 HEURISTICS PER CATEGORY:
 
@@ -1931,31 +1931,36 @@ EXAMPLES & EVIDENCE (8%):
 54. Negative Examples — shows what bad input looks like and expected behavior
 55. Edge Case Examples — at least one non-obvious scenario shown
 
-MAINTAINABILITY (4%):
+MAINTAINABILITY (3%):
 56. Purpose Statement Clarity — first 3 lines tell you exactly what this skill does
 57. Author Intent Legibility — new person can understand design decisions
 58. Change Surface Area — how many places need updating if one thing changes
 59. Versioning Signals — any indication of when this was last updated
 60. Dependency Documentation — external dependencies listed upfront
 
-SAFETY & SIDE EFFECTS (3%):
-61. Destructive Operation Flagging — delete, overwrite, send operations called out explicitly
-62. Irreversibility Warnings — warns Claude before permanent actions
-63. Scope Containment — doesn't accidentally grant permissions beyond what task needs
-64. Data Exposure Risk — doesn't instruct Claude to log or output sensitive data
-65. Silent Failure Risk — operations that could fail without Claude knowing
+SECURITY (8%):
+61. Destructive Action Gates — delete/overwrite/drop/truncate/wipe operations require explicit user confirmation before execution; no silent destructive actions
+62. Credential & Secret Hygiene — passwords, tokens, API keys, private keys never echoed, logged, or output as plain text; masking or omission instructions present when credentials are handled
+63. Prompt Injection Resistance — skill that reads external content (files, web pages, user input) treats that content as literal data, not as instructions that override skill behavior
+64. Least Privilege Enforcement — accesses only specific, named resources rather than broad directory trees or all-files patterns; no wildcard access
+65. Irreversibility Documentation — permanent, unrecoverable actions (send email, post to service, delete record) labeled irreversible and require confirmation before execution
+66. Safe Error State — when operations fail mid-execution, skill specifies how to restore the system to a safe consistent state; no silent partial-completion of destructive sequences
+67. Injection Surface Hardening — inputs that flow into shell commands, SQL queries, or code execution paths are explicitly validated, escaped, or sandboxed before use
+68. Audit Trail for High-Impact Operations — destructive, financial, or external communication operations report exactly what was executed so the user can verify
+69. No Overpermission Language — absent of "do anything the user asks", "bypass checks if needed", "ignore validation", "access all files"; scope is explicitly bounded
+70. Data Minimization — PII, credentials, internal paths, and confidential content not propagated beyond what the task requires; no unnecessary collection or retention
 
 ADDITIONAL HEURISTICS (factored into relevant categories):
-66. Platform Specificity — written for correct runtime (claude.ai vs API vs Claude Code)
-67. Tool Availability Assumptions — assumes bash or specific MCPs without stating it
-68. User Context Sensitivity — aware of what user may or may not know
-69. Conversation State Awareness — knows where in a conversation it might be loaded
-70. Multi-turn Awareness — handles being called once vs multiple times in session
-71. Best Practice Alignment — matches patterns from high-performing skill files
-72. Anti-pattern Detection — common failure patterns present
-73. Complexity vs Value Ratio — doing something that actually needed a skill file
-74. Reusability Score — broadly applicable vs hyper-specific
-75. Composability — works alongside other skills without conflict
+71. Platform Specificity — written for correct runtime (claude.ai vs API vs Claude Code)
+72. Tool Availability Assumptions — assumes bash or specific MCPs without stating it
+73. User Context Sensitivity — aware of what user may or may not know
+74. Conversation State Awareness — knows where in a conversation it might be loaded
+75. Multi-turn Awareness — handles being called once vs multiple times in session
+76. Best Practice Alignment — matches patterns from high-performing skill files
+77. Anti-pattern Detection — common failure patterns present
+78. Complexity vs Value Ratio — doing something that actually needed a skill file
+79. Reusability Score — broadly applicable vs hyper-specific
+80. Composability — works alongside other skills without conflict
 
 Respond ONLY with valid JSON. No markdown. No preamble. No explanation after the JSON.
 
@@ -1993,7 +1998,7 @@ Respond ONLY with valid JSON. No markdown. No preamble. No explanation after the
     "robustness": { "score": 40, "summary": "...", "issues": [], "fixes": [] },
     "examples_evidence": { "score": 20, "summary": "...", "issues": [], "fixes": [] },
     "maintainability": { "score": 65, "summary": "...", "issues": [], "fixes": [] },
-    "safety_side_effects": { "score": 85, "summary": "...", "issues": [], "fixes": [] }
+    "security": { "score": 85, "summary": "...", "issues": [], "fixes": [] }
   }
 }`;
 ```
@@ -2002,21 +2007,21 @@ Respond ONLY with valid JSON. No markdown. No preamble. No explanation after the
 
 ## 18. Heuristics Reference
 
-See system prompt above for full 75-heuristic list with descriptions. Quick reference:
+See system prompt above for full 80-heuristic list with descriptions. Quick reference:
 
 | # | Category | Weight | Heuristics |
 |---|---|---|---|
 | 1 | Discoverability | 15% | 1-6 |
-| 2 | Instruction Quality | 20% | 7-15 |
+| 2 | Instruction Quality | 18% | 7-15 |
 | 3 | Scope & Boundaries | 12% | 16-22 |
-| 4 | Structural Integrity | 8% | 23-30 |
+| 4 | Structural Integrity | 7% | 23-30 |
 | 5 | Token Economics | 10% | 31-38 |
 | 6 | Consistency & Conflicts | 10% | 39-43 |
 | 7 | Robustness | 10% | 44-50 |
-| 8 | Examples & Evidence | 8% | 51-55 |
-| 9 | Maintainability | 4% | 56-60 |
-| 10 | Safety & Side Effects | 3% | 61-65 |
-| + | Cross-category | — | 66-75 |
+| 8 | Examples & Evidence | 7% | 51-55 |
+| 9 | Maintainability | 3% | 56-60 |
+| 10 | Security | 8% | 61-70 |
+| + | Cross-category | — | 71-80 |
 
 ---
 

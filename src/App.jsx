@@ -26,7 +26,7 @@ const scoreLabel = s => s >= 85 ? "EXCEPTIONAL" : s >= 65 ? "GOOD" : s >= 45 ? "
 const monoScoreColor = s => s >= 80 ? color.scoreHi : s >= 60 ? color.scoreMid : color.scoreLo;
 const monoScoreUnderline = s => s >= 80 ? null : s >= 60 ? `1.5px solid ${color.underlineMid}` : `1.5px solid ${color.underlineLo}`;
 
-const LOADING_MSGS = ["Parsing structure...", "Checking trigger precision...", "Scanning for conflicts...", "Measuring token density...", "Evaluating edge cases...", "Running 75 heuristics...", "Finalizing report..."];
+const LOADING_MSGS = ["Parsing structure...", "Checking trigger precision...", "Scanning for conflicts...", "Measuring token density...", "Evaluating edge cases...", "Running 80 heuristics...", "Finalizing report..."];
 
 const BASE = { minHeight: "100vh", background: color.bg, color: color.text3, fontFamily: font.sans };
 
@@ -494,7 +494,7 @@ export default function SkillLint() {
             Lint your<br /><em style={{ fontStyle: "italic", color: color.text8 }}>skill files.</em>
           </h1>
           <p style={{ fontSize: "16px", color: color.text8, fontWeight: "300", lineHeight: 1.7, margin: "0 0 40px" }}>
-            Upload a <code style={{ fontFamily: font.mono, fontSize: "13px", color: color.text7, background: color.surface2, padding: "2px 7px", borderRadius: radius.sm, border: border.default }}>.md</code> skill file. Score it across 75 heuristics. Get specific rewrites for every failing dimension.
+            Upload a <code style={{ fontFamily: font.mono, fontSize: "13px", color: color.text7, background: color.surface2, padding: "2px 7px", borderRadius: radius.sm, border: border.default }}>.md</code> skill file. Score it across 80 heuristics. Get specific rewrites for every failing dimension.
           </p>
         </div>
 
