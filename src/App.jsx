@@ -183,12 +183,12 @@ function CategoryRow({ cat, data, index }) {
           transition: "background 0.15s",
         }}
       >
-        <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.textA }}>
+        <span style={{ fontFamily: font.mono, fontSize: "11px", color: color.text7 }}>
           {String(index + 1).padStart(2, "0")}
         </span>
         <div>
-          <div style={{ fontSize: "14px", color: color.text3, fontWeight: "500", marginBottom: "4px" }}>{cat.label}</div>
-          <div style={{ fontSize: "12px", color: color.text8, lineHeight: 1.5 }}>{data.summary}</div>
+          <div style={{ fontSize: "14px", color: color.text1, fontWeight: "500", marginBottom: "4px" }}>{cat.label}</div>
+          <div style={{ fontSize: "13px", color: color.text5, lineHeight: 1.6 }}>{data.summary}</div>
         </div>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -199,9 +199,9 @@ function CategoryRow({ cat, data, index }) {
               <span style={{ fontFamily: font.mono, fontSize: "14px", fontWeight: "600", color: monoScoreColor(data.score), borderBottom: monoScoreUnderline(data.score), paddingBottom: monoScoreUnderline(data.score) ? "1px" : undefined }}>{data.score}</span>
             </div>
           </div>
-          <div style={{ marginTop: "5px", fontFamily: font.mono, fontSize: "10px", color: color.textA, letterSpacing: "0.1em" }}>{cat.weight}% WEIGHT</div>
+          <div style={{ marginTop: "5px", fontFamily: font.mono, fontSize: "10px", color: color.text7, letterSpacing: "0.1em" }}>{cat.weight}% WEIGHT</div>
         </div>
-        <div style={{ color: color.textA, fontSize: "16px", textAlign: "center", userSelect: "none", transition: "transform .2s", transform: open ? "rotate(45deg)" : "none" }}>
+        <div style={{ color: color.text6, fontSize: "16px", textAlign: "center", userSelect: "none", transition: "transform .2s", transform: open ? "rotate(45deg)" : "none" }}>
           {hasIssues ? "+" : "·"}
         </div>
       </div>
@@ -760,7 +760,7 @@ export default function SkillLint() {
           {/* Breakdown header */}
           <div style={{ display: "grid", gridTemplateColumns: "36px 1fr 180px 28px", gap: "16px", padding: "12px 0", borderBottom: `1px solid ${color.surface3}` }}>
             {["#", "CATEGORY", "SCORE", ""].map((h, i) => (
-              <span key={i} style={{ fontFamily: font.mono, fontSize: "10px", color: color.text9, letterSpacing: ".12em" }}>{h}</span>
+              <span key={i} style={{ fontFamily: font.mono, fontSize: "10px", color: color.text6, letterSpacing: ".12em" }}>{h}</span>
             ))}
           </div>
 
