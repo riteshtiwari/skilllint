@@ -4,14 +4,16 @@ import { SYSTEM_PROMPT } from "./lib/prompts.js";
 
 const ALLOWED_ORIGINS = new Set([
   "https://skilllint.dev",
+  "https://www.skilllint.dev",
   "http://localhost:5173",
   "http://localhost:4173",
+  "http://localhost:3000",
 ]);
 
 function getCorsHeaders(req) {
   const origin = req.headers.get("origin") || "";
   return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "https://skilllint.dev",
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "https://www.skilllint.dev",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-Api-Key",
   };
@@ -69,6 +71,7 @@ export default async function handler(req) {
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
         max_tokens: 8000,
+        stream: true,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: `Evaluate this skill file:\n\n<skill_file>\n${content}\n</skill_file>` }],
       }),
@@ -88,23 +91,42 @@ export default async function handler(req) {
       return json({ error: "Anthropic API error", detail: err.error?.message }, 500, cors);
     }
 
-    const data = await response.json();
-    const rawText = data.content?.[0]?.text || "";
-    const clean = rawText.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim();
+    // Stream text deltas through to the client
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+    const encoder = new TextEncoder();
 
-    if (!clean) {
-      return json({ error: "Empty response from evaluation. Try again." }, 500, cors);
-    }
+    (async () => {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-    let parsed;
-    try {
-      parsed = JSON.parse(clean);
-    } catch {
-      return json({ error: "Failed to parse evaluation response. Try again." }, 500, cors);
-    }
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith("data: ")) continue;
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") continue;
+            try {
+              const event = JSON.parse(data);
+              if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+                await writer.write(encoder.encode(event.delta.text));
+              }
+            } catch (e) { void e; /* skip malformed SSE lines */ }
+          }
+        }
+      } finally {
+        await writer.close();
+      }
+    })();
 
-    return new Response(JSON.stringify(parsed), {
-      headers: { "Content-Type": "application/json", ...cors },
+    return new Response(readable, {
+      headers: { "Content-Type": "text/plain; charset=utf-8", ...cors },
     });
 
   } catch (err) {

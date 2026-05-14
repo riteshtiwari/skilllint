@@ -332,19 +332,33 @@ export default function SkillLint() {
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
+      // Error responses are JSON; success is a plain-text stream of JSON
+      if (!res.ok) {
+        let errData;
+        try { errData = await res.json(); } catch { errData = {}; }
+        throw new Error(errData.error || `Server error (${res.status})`);
+      }
+
+      // Read the streamed text
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let raw = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        raw += decoder.decode(value, { stream: true });
+      }
+
+      const clean = raw.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim();
+      if (!clean) throw new Error("Empty response from evaluation. Try again.");
+
       let data;
       try {
-        data = await res.json();
+        data = JSON.parse(clean);
       } catch {
-        const raw = await res.text().catch(() => "");
-        if (raw.toLowerCase().includes("<!doctype") || raw.toLowerCase().includes("<html")) {
-          throw new Error(`Server returned an HTML error page (${res.status}). Check that the API route is running.`);
-        }
-        throw new Error(`Server returned an unreadable response (${res.status}).${raw ? " " + raw.slice(0, 120) : ""}`);
+        throw new Error("Failed to parse evaluation response. Try again.");
       }
-      if (!res.ok) {
-        throw new Error(data.error || "Evaluation failed");
-      }
+
       if (data.overall_score == null) {
         throw new Error("Empty response from evaluation. Try again.");
       }
