@@ -166,36 +166,33 @@ export function Landing({ onStart, isMobile }) {
         {/* Left panel */}
         <div style={{
           display: "flex", flexDirection: "column", justifyContent: isMobile ? "flex-start" : "center",
-          padding: isMobile ? "40px 24px 120px" : "0 64px 0 72px",
+          padding: isMobile ? "40px 24px 120px" : "0 64px 100px 72px",
           borderRight: isMobile ? "none" : border.strong,
           position: "relative",
           flexShrink: 0,
         }}>
           <div className="sl-eyebrow" style={{
-            fontFamily: font.mono, fontSize: "10px", color: color.red,
+            fontFamily: font.mono, fontSize: "10px", color: color.text8,
             letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: "28px",
             display: "flex", alignItems: "center", gap: "10px",
-            opacity: 0,
           }}>
-            <span style={{ width: "24px", height: "1px", background: color.red, display: "inline-block", flexShrink: 0, opacity: 0.5 }} />
+            <span style={{ width: "24px", height: "1px", background: color.textC, display: "inline-block", flexShrink: 0 }} />
             Agentic security
           </div>
 
           <h1 className="sl-h1" style={{
             fontSize: isMobile ? "38px" : "58px", fontWeight: "200", lineHeight: 1.06,
             letterSpacing: "-0.03em", color: color.text1, margin: "0 0 28px",
-            opacity: 0,
           }}>
             Your skill files<br />
             are not just broken.<br />
             They&apos;re a<br />
-            <em style={{ fontStyle: "normal", fontWeight: "200", color: color.red }}>security risk.</em>
+            <em style={{ fontStyle: "normal", fontWeight: "200", color: color.brand }}>security risk.</em>
           </h1>
 
           <p className="sl-sub" style={{
             fontSize: "15px", fontWeight: "300", color: color.text8,
             lineHeight: 1.8, maxWidth: "400px", margin: "0 0 48px",
-            opacity: 0,
           }}>
             No confirmation gate means Claude{" "}
             <b style={{ color: color.text4, fontWeight: "400" }}>deletes silently.</b>{" "}
@@ -206,7 +203,7 @@ export function Landing({ onStart, isMobile }) {
             SkillLint catches all of it before it reaches production.
           </p>
 
-          <div className="sl-cta" style={{ display: "flex", alignItems: "center", gap: "16px", opacity: 0 }}>
+          <div className="sl-cta" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <button
               onClick={handleStart}
               style={{
@@ -241,7 +238,6 @@ export function Landing({ onStart, isMobile }) {
             left: isMobile ? undefined : "72px",
             display: "flex", gap: isMobile ? "28px" : "40px",
             marginTop: isMobile ? "48px" : undefined,
-            opacity: 0,
           }}>
             {[
               { num: "10",  label: "Security checks" },
@@ -272,11 +268,10 @@ export function Landing({ onStart, isMobile }) {
               className="sl-card-enter"
               style={{
                 width: "100%", maxWidth: "460px",
-                borderLeft: `2px solid ${color.red}`,
                 padding: "36px 40px",
                 background: color.surface0,
                 border: border.subtle,
-                borderLeftColor: color.red,
+                borderLeftColor: color.brand,
                 borderLeftWidth: "2px",
                 borderLeftStyle: "solid",
                 borderRadius: "3px",
@@ -284,9 +279,8 @@ export function Landing({ onStart, isMobile }) {
             >
               <div style={{
                 fontFamily: font.mono, fontSize: "9px", fontWeight: "600",
-                color: color.red, letterSpacing: "0.22em",
+                color: color.text7, letterSpacing: "0.22em",
                 textTransform: "uppercase", marginBottom: "22px",
-                opacity: 0.75,
               }}>
                 {incident.tag}
               </div>
@@ -307,50 +301,33 @@ export function Landing({ onStart, isMobile }) {
               </p>
 
               <div style={{
-                display: "flex", alignItems: "center", gap: "10px",
                 paddingTop: "18px", borderTop: border.subtle,
+                fontFamily: font.mono, fontSize: "10px", color: color.textA,
+                letterSpacing: "0.04em",
               }}>
-                <div style={{
-                  width: "6px", height: "6px", borderRadius: "50%",
-                  background: color.red, flexShrink: 0, opacity: 0.5,
-                }} />
-                <div style={{
-                  fontFamily: font.mono, fontSize: "10px", color: color.textA,
-                  letterSpacing: "0.04em",
-                }}>
-                  Missing: {incident.check}
-                </div>
+                Missing: {incident.check}
               </div>
             </div>
 
             {/* Dot nav */}
-            <div style={{ display: "flex", gap: "8px", marginTop: "28px", alignItems: "center" }}>
+            <div style={{ display: "flex", gap: "10px", marginTop: "28px", alignItems: "center" }}>
               {INCIDENTS.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => goTo(i)}
                   style={{
-                    width: i === activeCard ? "20px" : "6px",
-                    height: "4px",
-                    borderRadius: "2px",
-                    background: i === activeCard ? color.red : color.surface7,
+                    width: i === activeCard ? "24px" : "8px",
+                    height: "6px",
+                    borderRadius: "3px",
+                    background: i === activeCard ? color.red : color.surface6,
                     border: "none",
                     cursor: "pointer",
                     padding: 0,
                     transition: "all 0.3s ease",
-                    opacity: i === activeCard ? 0.6 : 0.35,
+                    opacity: i === activeCard ? 0.85 : 0.55,
                   }}
                 />
               ))}
-            </div>
-
-            <div style={{
-              position: "absolute", bottom: "32px",
-              fontFamily: font.mono, fontSize: "9px",
-              color: color.textC, letterSpacing: "0.16em",
-              textTransform: "uppercase",
-            }}>
-              Real failure patterns. Not hypothetical.
             </div>
 
           </div>
