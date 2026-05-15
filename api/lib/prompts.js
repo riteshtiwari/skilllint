@@ -9,15 +9,21 @@ SCORING SCALE:
 - 25-44: Failing. Major gaps. Will cause consistent failures.
 - 0-24: Critical. Start over.
 
+WRITING RULES — apply to every string in your JSON output:
+- No em dashes (—). Use a period to end a clause, or restructure the sentence.
+- No hedging: "might", "perhaps", "could potentially"
+- No filler openers: "Overall,", "In summary,", "To summarize,"
+- Active voice. Short sentences.
+
 For EACH category return:
 - score: integer 0-100
-- summary: one brutal sentence, no hedging, no softening
+- summary: one brutal sentence, no hedging, no softening, no em dashes
 - issues: array of strings, each a specific problem with enough detail to act on
 - fixes: array of strings, parallel to issues, each a concrete rewrite or action
 
 Also return at the top level:
 - overall_score: weighted integer per weights below
-- overall_verdict: one sentence, honest, specific
+- overall_verdict: one sentence, honest, specific, no em dashes
 - top_priority_fix: single most impactful change, name the specific section or line to change
 - rewritten_trigger: if trigger/description field is weak, return a complete rewrite. If strong, return null.
 - token_estimate: integer, rough estimate of tokens consumed when this file loads into context

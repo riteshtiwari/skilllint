@@ -42,6 +42,31 @@ const LOADING_MSGS = [
 
 const BASE = { minHeight: "100vh", background: color.bg, color: color.text3, fontFamily: font.sans };
 
+// Strip em dashes from LLM output strings before rendering.
+// The prompt instructs the model not to use them, but this catches any that slip through.
+function stripEmDashes(str) {
+  if (typeof str !== "string") return str;
+  return str.replace(/\s*—\s*/g, ". ").replace(/\.\s*\./g, ".").trim();
+}
+function sanitizeResult(data) {
+  if (!data || typeof data !== "object") return data;
+  const out = { ...data };
+  if (out.overall_verdict) out.overall_verdict = stripEmDashes(out.overall_verdict);
+  if (out.top_priority_fix) out.top_priority_fix = stripEmDashes(out.top_priority_fix);
+  if (out.rewritten_trigger) out.rewritten_trigger = stripEmDashes(out.rewritten_trigger);
+  if (out.categories && typeof out.categories === "object") {
+    out.categories = Object.fromEntries(
+      Object.entries(out.categories).map(([k, cat]) => [k, {
+        ...cat,
+        summary: stripEmDashes(cat.summary),
+        issues: cat.issues?.map(stripEmDashes),
+        fixes: cat.fixes?.map(stripEmDashes),
+      }])
+    );
+  }
+  return out;
+}
+
 // Heuristic check — does this text look like a skill file?
 function looksLikeSkillFile(text) {
   const hasDescriptionOrTrigger =
@@ -287,13 +312,13 @@ function CategoryRow({ cat, data, index, isMobile }) {
         <div style={{ paddingBottom: "20px", paddingLeft: isMobile ? 0 : "52px" }}>
           {data.issues.map((issue, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "1px", marginBottom: "1px" }}>
-              <div style={{ padding: "14px 16px", background: "rgba(248,113,113,0.04)" }}>
+              <div style={{ padding: "14px 16px", background: "rgba(248,113,113,0.07)", borderLeft: `2px solid rgba(248,113,113,0.4)` }}>
                 <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.red, letterSpacing: ".12em", marginBottom: "6px" }}>ISSUE</div>
-                <div style={{ fontSize: "13px", color: color.text6, lineHeight: 1.65 }}>{issue}</div>
+                <div style={{ fontSize: "13px", color: color.text5, lineHeight: 1.65 }}>{issue}</div>
               </div>
-              <div style={{ padding: "14px 16px", background: "rgba(74,222,128,0.03)", borderLeft: isMobile ? "none" : `1px solid ${color.surface3}`, borderTop: isMobile ? `1px solid ${color.surface3}` : "none" }}>
+              <div style={{ padding: "14px 16px", background: "rgba(74,222,128,0.06)", borderLeft: isMobile ? "none" : `2px solid rgba(74,222,128,0.3)`, borderTop: isMobile ? `1px solid ${color.surface3}` : "none" }}>
                 <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.green, letterSpacing: ".12em", marginBottom: "6px" }}>FIX</div>
-                <div style={{ fontSize: "13px", color: color.text6, lineHeight: 1.65 }}>{data.fixes?.[i] || "—"}</div>
+                <div style={{ fontSize: "13px", color: color.text5, lineHeight: 1.65 }}>{data.fixes?.[i] || "—"}</div>
               </div>
             </div>
           ))}
@@ -326,6 +351,9 @@ export default function SkillLint() {
   const [improved, setImproved] = useState(null);
   const [improving, setImproving] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
+  const [improvedResult, setImprovedResult] = useState(null);
+  const [evaluatingImproved, setEvaluatingImproved] = useState(false);
+  const [showImproveModal, setShowImproveModal] = useState(false);
   // Snapshot of content at evaluation time — ensures generateImproved() only runs
   // when the current content matches the file that was actually evaluated.
   const [evaluatedContent, setEvaluatedContent] = useState("");
@@ -334,6 +362,7 @@ export default function SkillLint() {
   const prevSignedIn = useRef(false);
   const improveControllerRef = useRef(null);
   const improveTimeoutRef = useRef(null);
+  const improveEvalControllerRef = useRef(null);
   const isMobile = useWindowWidth() < 640;
 
   const getToken = useCallback(() =>
@@ -464,7 +493,7 @@ export default function SkillLint() {
       if (data.overall_score == null) {
         throw new Error("Empty response from evaluation. Try again.");
       }
-      setResult(data); setView("result");
+      setResult(sanitizeResult(data)); setView("result");
       setEvaluatedContent(content); // snapshot — ties the improve call to this exact evaluation
       setImproved(null); setShowDiff(false);
       // Save to Supabase in the background — failure must not affect the result view
@@ -507,9 +536,11 @@ export default function SkillLint() {
   const reset = () => {
     improveControllerRef.current?.abort();
     clearTimeout(improveTimeoutRef.current);
+    improveEvalControllerRef.current?.abort();
     setView("upload"); setFile(null); setContent(""); setResult(null);
     setError(null); setStaticResult(null); setFileWarning(null);
     setImproved(null); setImproving(false); setShowDiff(false); setEvaluatedContent("");
+    setImprovedResult(null); setEvaluatingImproved(false); setShowImproveModal(false);
   };
 
   const clearHistory = () => {
@@ -541,9 +572,10 @@ export default function SkillLint() {
     if (!entry.result) return;
     improveControllerRef.current?.abort();
     clearTimeout(improveTimeoutRef.current);
-    setResult(entry.result); setFile({ name: entry.filename }); setError(null);
+    setResult(sanitizeResult(entry.result)); setFile({ name: entry.filename }); setError(null);
     setContent(""); setEvaluatedContent("");
     setImproved(null); setImproving(false); setShowDiff(false);
+    setImprovedResult(null); setEvaluatingImproved(false); setShowImproveModal(false);
     setView("result");
   };
 
@@ -619,6 +651,45 @@ export default function SkillLint() {
       if (controller.signal.aborted) return;
 
       setImproved(improvedContent);
+
+      // Silently evaluate the improved file to show score delta.
+      setEvaluatingImproved(true);
+      setImprovedResult(null);
+      const evalController = new AbortController();
+      improveEvalControllerRef.current = evalController;
+      try {
+        const evalRes = await fetch("/api/evaluate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Api-Key": keyManager.get() || "",
+          },
+          body: JSON.stringify({ content: improvedContent }),
+          signal: evalController.signal,
+        });
+        if (evalRes.ok) {
+          const evalReader = evalRes.body.getReader();
+          const evalDecoder = new TextDecoder();
+          let evalRaw = "";
+          while (true) {
+            const { done, value } = await evalReader.read();
+            if (done) { evalRaw += evalDecoder.decode(); break; }
+            evalRaw += evalDecoder.decode(value, { stream: true });
+          }
+          const evalClean = evalRaw.split("\n__DONE__\n")[0]
+            .replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim();
+          if (evalClean) {
+            try {
+              const evalData = JSON.parse(evalClean);
+              if (!evalController.signal.aborted && evalData.overall_score != null) {
+                setImprovedResult(evalData);
+              }
+            } catch { /* ignore parse errors — delta is optional */ }
+          }
+        }
+      } catch { /* network/abort errors — delta is optional */ }
+      finally { setEvaluatingImproved(false); }
+
     } catch (err) {
       clearTimeout(timeoutId);
       // AbortError means the user intentionally navigated away — don't surface an error.
@@ -917,6 +988,65 @@ export default function SkillLint() {
     const rp = isMobile ? 16 : 48; // result container horizontal padding
     return (
       <div style={BASE}>
+        {/* Modal */}
+        {showImproveModal && (
+          <div
+            onClick={() => setShowImproveModal(false)}
+            style={{
+              position: "fixed", inset: 0, zIndex: 100,
+              background: "rgba(0,0,0,0.72)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              padding: "24px",
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: "#111", border: `1px solid ${color.surface5}`,
+                borderRadius: radius.xl, padding: isMobile ? "28px 24px" : "36px 40px",
+                maxWidth: "420px", width: "100%",
+              }}
+            >
+              <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text8, letterSpacing: ".15em", marginBottom: "16px" }}>
+                IMPROVED VERSION
+              </div>
+              <div style={{ fontSize: "16px", color: color.text2, fontWeight: "400", lineHeight: 1.5, marginBottom: "12px" }}>
+                This rewrites your entire skill file.
+              </div>
+              <div style={{ fontSize: "14px", color: color.text7, lineHeight: 1.7, marginBottom: "28px" }}>
+                The model reads every issue and fix above, then produces a complete replacement that addresses all of them. Takes 40–60 seconds.
+              </div>
+              <div style={{ display: "flex", gap: "8px", flexDirection: isMobile ? "column" : "row" }}>
+                <button
+                  onClick={() => { setShowImproveModal(false); generateImproved(); }}
+                  style={{
+                    flex: 1, height: "48px",
+                    background: color.btnPrimary, color: color.btnPrimaryText,
+                    border: "none", borderRadius: radius.lg,
+                    fontFamily: font.mono, fontSize: "12px",
+                    letterSpacing: ".1em", fontWeight: "700",
+                    cursor: "pointer", transition: "all .15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = color.btnPrimaryHover; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = color.btnPrimary; }}
+                >GENERATE</button>
+                <button
+                  onClick={() => setShowImproveModal(false)}
+                  style={{
+                    height: "48px", padding: "0 24px",
+                    background: "none", border: `1px solid ${color.surface5}`,
+                    color: color.text8, borderRadius: radius.lg,
+                    fontFamily: font.mono, fontSize: "12px",
+                    letterSpacing: ".1em", cursor: "pointer", transition: "all .15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = color.text8; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = color.surface5; }}
+                >CANCEL</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <Nav onLogoClick={() => setView("landing")} isMobile={isMobile} right={
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {!isMobile && <NavBtn label="EXPORT .MD" onClick={exportMd} />}
@@ -935,7 +1065,30 @@ export default function SkillLint() {
             padding: `${isMobile ? 32 : 52}px 0 40px`,
             borderBottom: `1px solid ${color.surface3}`,
           }}>
-            <ScoreArc score={result.overall_score} size={isMobile ? 130 : 160} />
+            {/* Left col: arc + generate button */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
+              <ScoreArc score={result.overall_score} size={isMobile ? 130 : 160} />
+              {canGenerateImproved && !improving && !improved && (
+                <button
+                  onClick={() => setShowImproveModal(true)}
+                  style={{
+                    width: "100%", height: "38px",
+                    background: color.btnPrimary, color: color.btnPrimaryText,
+                    border: "none", borderRadius: radius.md,
+                    fontFamily: font.mono, fontSize: "10px",
+                    letterSpacing: ".1em", fontWeight: "700",
+                    cursor: "pointer", transition: "all .15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = color.btnPrimaryHover; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = color.btnPrimary; }}
+                >IMPROVE FILE</button>
+              )}
+              {(improving || improved) && !isMobile && (
+                <div style={{ fontFamily: font.mono, fontSize: "10px", color: improving ? color.text8 : color.green, letterSpacing: ".1em", textAlign: "center" }}>
+                  {improving ? "REWRITING\u2026" : "IMPROVED"}
+                </div>
+              )}
+            </div>
             <div>
               <div style={{ fontFamily: font.mono, fontSize: "13px", color: color.text8, marginBottom: "8px" }}>
                 {file?.name || "pasted content"}
@@ -960,6 +1113,153 @@ export default function SkillLint() {
             </div>
           </div>
 
+          {/* Improve section — appears at top as soon as generation starts */}
+          {(improving || improved) && (
+            <div style={{
+              margin: "28px 0",
+              padding: "24px",
+              background: color.surface1,
+              border: `1px solid ${color.surface5}`,
+              borderRadius: radius.lg,
+            }}>
+              <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text8, letterSpacing: ".15em", marginBottom: "16px" }}>
+                IMPROVED VERSION
+              </div>
+
+              {/* Generating */}
+              {improving && (
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <style>{`@keyframes impBar { from { background:#333; transform:scaleY(.4); } to { background:#bbb; transform:scaleY(1); } }`}</style>
+                  <div style={{ display: "flex", gap: "3px", alignItems: "flex-end", height: "20px" }}>
+                    {[0, 1, 2, 3, 4].map(i => (
+                      <div key={i} style={{
+                        width: "3px", height: "100%", background: "#333",
+                        borderRadius: "2px", transformOrigin: "bottom",
+                        animation: `impBar 0.9s ease-in-out ${i * 0.12}s infinite alternate`,
+                      }} />
+                    ))}
+                  </div>
+                  <span style={{ fontFamily: font.mono, fontSize: "12px", color: color.text8 }}>Rewriting skill file\u2026</span>
+                </div>
+              )}
+
+              {/* Done */}
+              {improved && !improving && (
+                <div>
+                  {/* Score comparison */}
+                  {evaluatingImproved && (
+                    <div style={{ fontFamily: font.mono, fontSize: "12px", color: color.text8, opacity: 0.5, marginBottom: "24px" }}>
+                      Scoring improved file\u2026
+                    </div>
+                  )}
+                  {improvedResult && !evaluatingImproved && (() => {
+                    const before = result?.overall_score ?? 0;
+                    const after = improvedResult.overall_score ?? 0;
+                    const delta = after - before;
+                    const deltaColor = delta > 0 ? color.green : delta < 0 ? color.red : color.text8;
+                    return (
+                      <div style={{ marginBottom: "24px" }}>
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: isMobile ? "16px" : "28px",
+                          paddingBottom: "20px",
+                          borderBottom: `1px solid ${color.surface3}`,
+                          marginBottom: "20px",
+                        }}>
+                          <div>
+                            <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.text8, letterSpacing: ".12em", marginBottom: "8px" }}>BEFORE</div>
+                            <div style={{ fontFamily: font.mono, fontSize: isMobile ? "44px" : "56px", fontWeight: "700", color: color.text8, opacity: 0.28, lineHeight: 1 }}>{before}</div>
+                          </div>
+                          <div style={{ fontFamily: font.mono, fontSize: "24px", color: color.text8, opacity: 0.2, flexShrink: 0 }}>→</div>
+                          <div>
+                            <div style={{ fontFamily: font.mono, fontSize: "10px", color: deltaColor, letterSpacing: ".12em", marginBottom: "8px" }}>AFTER</div>
+                            <div style={{ fontFamily: font.mono, fontSize: isMobile ? "44px" : "56px", fontWeight: "700", color: deltaColor, lineHeight: 1 }}>{after}</div>
+                          </div>
+                          {delta !== 0 && (
+                            <div style={{
+                              alignSelf: "flex-end", paddingBottom: "4px",
+                              fontFamily: font.mono, fontSize: "18px", fontWeight: "700", color: deltaColor,
+                              background: delta > 0 ? "rgba(74,222,128,0.07)" : "rgba(248,113,113,0.07)",
+                              padding: "6px 14px", borderRadius: radius.md,
+                            }}>
+                              {delta > 0 ? "+" : ""}{delta}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "8px 20px", alignItems: "center" }}>
+                          {CATEGORIES.map(cat => {
+                            const b = result?.categories?.[cat.id]?.score ?? 0;
+                            const a = improvedResult?.categories?.[cat.id]?.score ?? 0;
+                            const d = a - b;
+                            const dColor = d > 0 ? color.green : d < 0 ? color.red : color.text8;
+                            return [
+                              <span key={`${cat.id}-label`} style={{ fontSize: "13px", color: color.text7 }}>{cat.label}</span>,
+                              <span key={`${cat.id}-scores`} style={{ fontFamily: font.mono, fontSize: "12px" }}>
+                                <span style={{ color: color.text8, opacity: 0.3 }}>{b}</span>
+                                <span style={{ color: color.text8, opacity: 0.25 }}>{" → "}</span>
+                                <span style={{ color: dColor, fontWeight: "600" }}>{a}</span>
+                              </span>,
+                              <span key={`${cat.id}-delta`} style={{
+                                fontFamily: font.mono, fontSize: "12px", color: dColor,
+                                fontWeight: d !== 0 ? "700" : "400", minWidth: "36px", textAlign: "right"
+                              }}>
+                                {d > 0 ? `+${d}` : d < 0 ? `${d}` : "–"}
+                              </span>,
+                            ];
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Action buttons */}
+                  <div style={{ display: "flex", gap: "8px", flexDirection: isMobile ? "column" : "row" }}>
+                    <button
+                      onClick={downloadImproved}
+                      style={{
+                        flex: isMobile ? undefined : 1, height: "44px",
+                        background: color.btnPrimary, color: color.btnPrimaryText,
+                        border: "none", borderRadius: radius.lg,
+                        fontFamily: font.mono, fontSize: "11px",
+                        letterSpacing: ".1em", fontWeight: "700",
+                        cursor: "pointer", transition: "all .15s",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = color.btnPrimaryHover; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = color.btnPrimary; }}
+                    >DOWNLOAD {(file?.name || "skill").replace(/\.md$/i, "")}-improved.md</button>
+                    <button
+                      onClick={() => setShowDiff(v => !v)}
+                      style={{
+                        height: "44px", padding: "0 20px",
+                        background: "none",
+                        border: `1px solid ${showDiff ? color.brand : "#333"}`,
+                        color: showDiff ? color.brand : color.text8,
+                        borderRadius: radius.lg,
+                        fontFamily: font.mono, fontSize: "11px",
+                        letterSpacing: ".08em",
+                        cursor: "pointer", transition: "all .15s",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = showDiff ? color.brand : "#333"; e.currentTarget.style.color = showDiff ? color.brand : color.text8; }}
+                    >{showDiff ? "HIDE DIFF" : "SHOW DIFF"}</button>
+                    <button
+                      onClick={generateImproved}
+                      style={{
+                        height: "44px", padding: "0 20px",
+                        background: "none", border: "1px solid #333",
+                        color: color.text8, borderRadius: radius.lg,
+                        fontFamily: font.mono, fontSize: "11px",
+                        letterSpacing: ".08em", cursor: "pointer", transition: "all .15s",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.color = color.text8; }}
+                    >REGENERATE</button>
+                  </div>
+                  {showDiff && <DiffView original={content} improved={improved} isMobile={isMobile} />}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Top fix */}
           <div style={{ margin: "28px 0", padding: "20px 24px", background: color.bgTopFix, border: border.default, borderLeft: `3px solid ${col}`, borderRadius: radius.lg }}>
             <div style={{ fontFamily: font.mono, fontSize: "10px", color: col, letterSpacing: ".15em", marginBottom: "10px" }}>TOP PRIORITY FIX</div>
@@ -971,130 +1271,6 @@ export default function SkillLint() {
             <div style={{ marginBottom: "28px", padding: "20px 24px", background: color.bgGood, border: border.default, borderLeft: `3px solid ${color.green}`, borderRadius: radius.lg }}>
               <div style={{ fontFamily: font.mono, fontSize: "10px", color: color.green, letterSpacing: ".15em", marginBottom: "10px" }}>REWRITTEN TRIGGER</div>
               <div style={{ fontSize: "13px", color: color.text6, lineHeight: 1.85, fontFamily: font.mono, whiteSpace: "pre-wrap" }}>{result.rewritten_trigger}</div>
-            </div>
-          )}
-
-          {/* Improved version section — only shown for fresh evaluations, not history entries */}
-          {(canGenerateImproved || improving || improved) && (
-            <div style={{
-              margin: "28px 0",
-              padding: "20px 24px",
-              background: color.surface1,
-              border: border.default,
-              borderRadius: radius.lg,
-            }}>
-              <div style={{
-                fontFamily: font.mono, fontSize: "10px", color: color.text8,
-                letterSpacing: ".15em", marginBottom: "14px",
-              }}>
-                IMPROVED VERSION
-              </div>
-
-              {/* Idle — not yet generated */}
-              {!improved && !improving && (
-                <>
-                  <div style={{ fontSize: "13px", color: color.text8, lineHeight: 1.7, marginBottom: "16px" }}>
-                    Generate a complete, improved skill file that addresses every finding above. Download it, then run it back through SkillLint to verify the score.
-                  </div>
-                  <button
-                    onClick={generateImproved}
-                    style={{
-                      width: "100%", height: "44px",
-                      background: color.btnPrimary, color: color.btnPrimaryText,
-                      border: "none", borderRadius: radius.lg,
-                      fontFamily: font.mono, fontSize: "12px",
-                      letterSpacing: ".1em", fontWeight: "700",
-                      cursor: "pointer", transition: "all .15s",
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = color.btnPrimaryHover; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = color.btnPrimary; }}
-                  >GENERATE IMPROVED FILE</button>
-                </>
-              )}
-
-              {/* Loading */}
-              {improving && (
-                <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "4px 0" }}>
-                  <style>{`@keyframes impBar { from { background:#333; transform:scaleY(.4); } to { background:#bbb; transform:scaleY(1); } }`}</style>
-                  <div style={{ display: "flex", gap: "3px", alignItems: "flex-end", height: "20px" }}>
-                    {[0, 1, 2, 3, 4].map(i => (
-                      <div key={i} style={{
-                        width: "3px", height: "100%", background: "#333",
-                        borderRadius: "2px", transformOrigin: "bottom",
-                        animation: `impBar 0.9s ease-in-out ${i * 0.12}s infinite alternate`,
-                      }} />
-                    ))}
-                  </div>
-                  <span style={{ fontFamily: font.mono, fontSize: "12px", color: color.text8 }}>
-                    Rewriting skill file\u2026
-                  </span>
-                </div>
-              )}
-
-              {/* Done */}
-              {improved && !improving && (
-                <div>
-                  <div style={{ fontSize: "13px", color: color.text8, lineHeight: 1.7, marginBottom: "16px" }}>
-                    Ready. Download the improved file, then drop it back into SkillLint to see the score change.
-                  </div>
-                  <div style={{
-                    display: "flex", gap: "8px",
-                    flexDirection: isMobile ? "column" : "row",
-                    marginBottom: showDiff ? "0" : "0",
-                  }}>
-                    <button
-                      onClick={downloadImproved}
-                      style={{
-                        flex: isMobile ? undefined : 1,
-                        height: "40px",
-                        background: color.btnPrimary, color: color.btnPrimaryText,
-                        border: "none", borderRadius: radius.lg,
-                        fontFamily: font.mono, fontSize: "11px",
-                        letterSpacing: ".1em", fontWeight: "700",
-                        cursor: "pointer", transition: "all .15s",
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = color.btnPrimaryHover; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = color.btnPrimary; }}
-                    >
-                      DOWNLOAD {(file?.name || "skill").replace(/\.md$/i, "")}-improved.md
-                    </button>
-                    <button
-                      onClick={() => setShowDiff(v => !v)}
-                      style={{
-                        height: "40px", padding: "0 20px",
-                        background: "none",
-                        border: `1px solid ${showDiff ? color.brand : "#333"}`,
-                        color: showDiff ? color.brand : color.text8,
-                        borderRadius: radius.lg,
-                        fontFamily: font.mono, fontSize: "11px",
-                        letterSpacing: ".08em",
-                        cursor: "pointer", transition: "all .15s",
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = showDiff ? color.brand : "#333"; e.currentTarget.style.color = showDiff ? color.brand : color.text8; }}
-                    >
-                      {showDiff ? "HIDE DIFF" : "SHOW DIFF"}
-                    </button>
-                    <button
-                      onClick={generateImproved}
-                      style={{
-                        height: "40px", padding: "0 20px",
-                        background: "none", border: "1px solid #333",
-                        color: color.text8,
-                        borderRadius: radius.lg,
-                        fontFamily: font.mono, fontSize: "11px",
-                        letterSpacing: ".08em",
-                        cursor: "pointer", transition: "all .15s",
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = color.brand; e.currentTarget.style.color = color.brand; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#333"; e.currentTarget.style.color = color.text8; }}
-                    >REGENERATE</button>
-                  </div>
-                  {showDiff && (
-                    <DiffView original={content} improved={improved} isMobile={isMobile} />
-                  )}
-                </div>
-              )}
             </div>
           )}
 
