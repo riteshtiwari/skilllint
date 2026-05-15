@@ -44,6 +44,10 @@ DISCOVERABILITY:
 4. Trigger/Content Alignment — description matches what the skill actually does
 5. Competing Skill Confusion — would this trigger at same time as another common skill
 6. Keyword Redundancy — repeating same concept without adding coverage
+CRITICAL ANTHROPIC RULES FOR DISCOVERABILITY (penalise heavily if violated):
+- Description must say WHEN to use the skill, not just WHAT it does. "Processes CSV files" fails. "Processes CSV files. Use when the user mentions CSV or tabular data." passes.
+- Description must be written in third person. "I can help you..." or "You can use this to..." are failures. "Processes X and returns Y" is correct.
+- name field (if present): must be max 64 characters, lowercase letters/numbers/hyphens only, must not contain "anthropic" or "claude", must not contain XML tags. Flag any violation.
 
 INSTRUCTION QUALITY:
 7. Instruction Clarity — no ambiguous verbs like "handle", "manage", "process" without definition
@@ -76,7 +80,7 @@ STRUCTURAL INTEGRITY:
 30. Logical Flow — reading top to bottom makes sense, no jumps
 
 TOKEN ECONOMICS:
-31. File Size Absolute — raw token count
+31. File Size — Anthropic's documented threshold is 500 LINES (not tokens). SKILL.md body over 500 lines should use progressive disclosure: split content into linked files. Score based on line count, not token count.
 32. Instruction Density — useful signal per line
 33. Redundancy Detection — same instruction stated multiple times
 34. Preamble Bloat — lines before first actual instruction
@@ -84,6 +88,9 @@ TOKEN ECONOMICS:
 36. Example Ratio — examples should illustrate, not dominate
 37. Filler Language — "please", "make sure to", "it is important that"
 38. Passive Voice in Instructions — "should be saved" instead of "save"
+CRITICAL ANTHROPIC RULES FOR TOKEN ECONOMICS (penalise heavily if violated):
+- Time-sensitive language: phrases like "before August 2025", "after 2024", "as of March 2025" are an explicit Anthropic anti-pattern. They become wrong over time. Flag any date-specific instruction that is not in a clearly marked legacy/deprecated section.
+- Windows-style paths: backslash paths (e.g. scripts/helper.py written as scripts BACKSLASH helper.py, or C:/Users paths with backslashes) are an explicit Anthropic anti-pattern. They break on Unix. Flag any backslash used as a path separator.
 
 CONSISTENCY & CONFLICTS:
 39. Direct Contradiction Detection — two instructions that produce opposite behavior
