@@ -211,8 +211,9 @@ function checkTokenEconomics(text) {
 
   // +10 no Windows-style paths
   // Anthropic explicitly flags backslash paths as an anti-pattern — they break on Unix.
-  // Pattern targets `word\word` and `C:\...` constructs; avoids regex escape sequences.
-  const windowsPaths = /\b[a-zA-Z]:\\|\b\w+\\\w+(?:\.\w+|\\\w+)/;
+  // Require 2+ chars after backslash so single-letter regex metacharacters (\s, \w, \d)
+  // inside pattern examples do not produce false positives.
+  const windowsPaths = /\b[a-zA-Z]:\\|\b\w+\\\w{2,}(?:\.\w+|\\\w+)/;
   if (!windowsPaths.test(text)) {
     score += 10;
     checks.push({ passed: true, text: "No Windows-style paths" });
@@ -271,7 +272,7 @@ function checkDiscoverability(text) {
 
   // +20 description says WHEN to use — not just WHAT it does
   // Anthropic: "description must say WHEN to use the skill, not just what it does"
-  const whenPattern = /\buse when\b|\bwhen the user\b|\btriggers when\b|\bwhen.*asks?\b|\bwhen.*mention\b|\bwhen.*want\b|\bif the user\b|\buse if\b/i;
+  const whenPattern = /\buse when\b|\bwhen the user\b|\btriggers when\b|\bwhen.*asks?\b|\bwhen.*mention\b|\bwhen.*want\b|\bif the user\b|\buse if\b|\bwhenever\b|\bwhen they\b/i;
   // Also accept a dedicated "When to use" section as equivalent
   const hasWhenSection = /^## (when to use|trigger|triggers)/im.test(text);
   if (whenPattern.test(text) || hasWhenSection) {
@@ -286,8 +287,13 @@ function checkDiscoverability(text) {
   // and inconsistent point-of-view can cause discovery problems."
   // Bad: "I can help you...", "You can use this to..."
   const descLine = text.match(/^description:\s*["']?(.+?)["']?\s*$/im)?.[1] ?? "";
-  const firstPersonPattern = /\b(I\s+can|I\s+will|I'll|I\s+am|I'm|I\s+help|you\s+can\s+use\s+this|you\s+should\s+use\s+this)\b/i;
-  if (descLine && firstPersonPattern.test(descLine)) {
+  // First and second person patterns that violate Anthropic's third-person rule.
+  // Also catches "use this to" and similar author-addressed phrasing.
+  const firstPersonPattern = /\b(I\s+can|I\s+will|I'll|I\s+am|I'm|I\s+help|you\s+can\s+use\s+this|you\s+should\s+use\s+this|use\s+this\s+to|this\s+skill\s+helps?\s+you|this\s+will\s+help\s+you)\b/i;
+  if (!descLine) {
+    // No parseable description value — can't verify voice; skip rather than award points.
+    checks.push({ passed: false, text: "Description field is empty or unparseable — cannot verify third-person voice" });
+  } else if (firstPersonPattern.test(descLine)) {
     checks.push({ passed: false, text: "Description is in first or second person — rewrite in third person (e.g., 'Processes X' not 'I can process X')" });
   } else {
     score += 18;
@@ -333,7 +339,8 @@ function checkDiscoverability(text) {
     const nameVal = nameMatch[1].trim();
     const nameErrors = [];
     if (nameVal.length > 64) nameErrors.push(`${nameVal.length} chars — max is 64`);
-    if (!/^[a-z0-9-]+$/.test(nameVal)) nameErrors.push("must use only lowercase letters, numbers, and hyphens");
+    // Must start and end with alphanumeric; hyphens only in the middle.
+    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(nameVal)) nameErrors.push("must use only lowercase letters, numbers, and hyphens (must start and end with alphanumeric)");
     if (/(anthropic|claude)/i.test(nameVal)) nameErrors.push("cannot contain 'anthropic' or 'claude'");
     if (/<[^>]+>/.test(nameVal)) nameErrors.push("cannot contain XML tags");
     if (nameErrors.length === 0) {
