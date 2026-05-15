@@ -53,8 +53,8 @@ export const color = {
   borderError: "#2a0f0f",  // error card border (dark red tint)
   bgWarning: "#0d0b08",   // warning card bg
   bgError:   "#100808",   // error card bg
-  bgGood:    "#0a120a",   // drag-over, success tint
-  bgTopFix:  "#0c0c0a",   // top-priority fix card
+  bgGood:    "#0d0d0d",   // drag-over, success tint
+  bgTopFix:  "#0d0d0d",   // top-priority fix card
 
   // Diff view — line colors and backgrounds
   diffAdded:      "#c6efde",              // added-line text (muted green readable on dark bg)
