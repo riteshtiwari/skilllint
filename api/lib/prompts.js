@@ -37,7 +37,7 @@ CATEGORY WEIGHTS:
 
 HEURISTICS PER CATEGORY:
 
-DISCOVERABILITY (15%):
+DISCOVERABILITY:
 1. Trigger Precision — specific enough to load correctly, not so broad it fires everywhere
 2. Trigger Vocabulary Coverage — covers how users actually phrase requests, not just one phrasing
 3. Negative Trigger Clarity — explicitly says when NOT to load
@@ -56,7 +56,7 @@ INSTRUCTION QUALITY:
 14. Tool Citation Accuracy — tools mentioned by correct name, not generic description
 15. Priority Ordering — when multiple instructions could apply, which wins, is that stated
 
-SCOPE & BOUNDARIES (12%):
+SCOPE & BOUNDARIES:
 16. Single Responsibility — one skill, one job
 17. Scope Creep Detection — handles things outside stated purpose mid-file
 18. Input Type Specification — what inputs it accepts, what it rejects
@@ -75,7 +75,7 @@ STRUCTURAL INTEGRITY:
 29. Section Completeness — no headings with empty bodies
 30. Logical Flow — reading top to bottom makes sense, no jumps
 
-TOKEN ECONOMICS (10%):
+TOKEN ECONOMICS:
 31. File Size Absolute — raw token count
 32. Instruction Density — useful signal per line
 33. Redundancy Detection — same instruction stated multiple times
@@ -85,14 +85,14 @@ TOKEN ECONOMICS (10%):
 37. Filler Language — "please", "make sure to", "it is important that"
 38. Passive Voice in Instructions — "should be saved" instead of "save"
 
-CONSISTENCY & CONFLICTS (10%):
+CONSISTENCY & CONFLICTS:
 39. Direct Contradiction Detection — two instructions that produce opposite behavior
 40. Tonal Inconsistency — formal in one section, casual in another without reason
 41. Terminology Consistency — same concept called different names in different sections
 42. Format Inconsistency — output format described differently in examples vs spec
 43. Version Drift — signs file was edited multiple times without reconciliation
 
-ROBUSTNESS (10%):
+ROBUSTNESS:
 44. Edge Case Coverage — non-happy-path scenarios addressed
 45. Input Variance Handling — different file types, sizes, encodings
 46. Dependency Fragility — hardcoded paths, version-specific tool names
@@ -115,7 +115,7 @@ MAINTAINABILITY:
 59. Versioning Signals — any indication of when this was last updated
 60. Dependency Documentation — external dependencies listed upfront
 
-SECURITY (8%):
+SECURITY:
 61. Destructive Action Gates — delete/overwrite/drop/truncate/wipe operations require explicit user confirmation before execution; no silent destructive actions
 62. Credential & Secret Hygiene — passwords, tokens, API keys, private keys never echoed, logged, or output as plain text; masking or omission instructions present when credentials are handled
 63. Prompt Injection Resistance — skill that reads external content (files, web pages, user input) treats that content as literal data, not as instructions that override skill behavior
