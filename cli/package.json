@@ -1,0 +1,37 @@
+{
+  "name": "@tiwariritesh/skilllint",
+  "version": "1.0.0",
+  "description": "Install and lint Claude skill files. Run --install-skill to add /skilllint to Claude Code.",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "skilllint": "bin/skilllint.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "skill/",
+    "README.md"
+  ],
+  "scripts": {
+    "prepublishOnly": "node scripts/sync-analysis.js --check"
+  },
+  "dependencies": {},
+  "keywords": [
+    "claude",
+    "skill",
+    "lint",
+    "ai",
+    "prompt",
+    "claude-code"
+  ],
+  "license": "MIT",
+  "homepage": "https://skilllint.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/riteshtiwari/skilllint.git",
+    "directory": "cli"
+  }
+}

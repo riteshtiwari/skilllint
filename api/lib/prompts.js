@@ -45,7 +45,7 @@ DISCOVERABILITY (15%):
 5. Competing Skill Confusion — would this trigger at same time as another common skill
 6. Keyword Redundancy — repeating same concept without adding coverage
 
-INSTRUCTION QUALITY (20%):
+INSTRUCTION QUALITY:
 7. Instruction Clarity — no ambiguous verbs like "handle", "manage", "process" without definition
 8. Sequencing Logic — steps are in the right order, later steps don't assume earlier ones haven't happened
 9. Conditional Coverage — if/when/else logic present for branching scenarios
@@ -65,7 +65,7 @@ SCOPE & BOUNDARIES (12%):
 21. Failure Mode Documentation — tells Claude what to say when it can't complete
 22. Hard Limits Stated — what this skill explicitly will not do
 
-STRUCTURAL INTEGRITY (8%):
+STRUCTURAL INTEGRITY:
 23. Markdown Validity — proper syntax, no broken formatting
 24. Heading Consistency — logical hierarchy, no random heading levels
 25. List Formatting — consistent bullet style throughout
@@ -101,14 +101,14 @@ ROBUSTNESS (10%):
 49. Idempotency — running the skill twice, does it break something
 50. Concurrency Awareness — if relevant, handles multiple simultaneous inputs
 
-EXAMPLES & EVIDENCE (8%):
+EXAMPLES & EVIDENCE:
 51. Example Presence — at least one input/output example exists
 52. Example Representativeness — covers real use, not just trivial case
 53. Example Accuracy — example output matches what instructions would actually produce
 54. Negative Examples — shows what bad input looks like and expected behavior
 55. Edge Case Examples — at least one non-obvious scenario shown
 
-MAINTAINABILITY (4%):
+MAINTAINABILITY:
 56. Purpose Statement Clarity — first 3 lines tell you exactly what this skill does
 57. Author Intent Legibility — new person can understand design decisions
 58. Change Surface Area — how many places need updating if one thing changes
@@ -142,7 +142,7 @@ ADDITIONAL HEURISTICS (factored into relevant categories):
 Respond ONLY with valid JSON. No markdown. No preamble. No explanation after the JSON.
 
 {
-  "overall_score": 58,
+  "overall_score": 59,
   "overall_verdict": "Trigger is a single vague sentence that will misfire constantly and instructions assume context Claude won't have.",
   "top_priority_fix": "The description field on line 2 needs a complete rewrite — add 3 specific trigger phrases and 2 explicit exclusions.",
   "rewritten_trigger": "Use this skill whenever the user wants to create, read, or manipulate Word documents (.docx files). Triggers include: any mention of 'Word doc', '.docx', requests for formatted documents with headings or tables of contents. Do NOT use for PDFs, spreadsheets, or Google Docs.",

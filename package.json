@@ -5,10 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predev": "node cli/scripts/sync-analysis.js",
     "build": "vite build",
+    "prebuild": "node cli/scripts/sync-analysis.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "generate:og": "node scripts/gen-og.mjs"
+    "generate:og": "node scripts/gen-og.mjs",
+    "sync:cli": "node cli/scripts/sync-analysis.js",
+    "sync:cli:check": "node cli/scripts/sync-analysis.js --check"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.6",
