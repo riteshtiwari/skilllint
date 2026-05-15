@@ -46,6 +46,12 @@ Ban these outright. No exceptions.
 - ✅ ❌ 🚀 💡 🎯 🔥 ✨ 🎉 👇 👆 → none of these in commits, UI text, or docs
 - Emoji are only acceptable in places where they serve a functional role (e.g., status indicators that users see)
 
+**Em dash as a bot tell:**
+- The pattern `word — do X instead` repeated across multiple strings is AI output, not human writing
+- Bad: "Description is vague — add trigger phrases", "No examples found — add at least one"
+- Good: "Description is vague. Add at least three trigger phrases." / "No examples. Add at least one input/output pair."
+- A single em dash used once in prose is fine. The same `[problem] — [fix]` formula used in every error string is the problem.
+
 **Lists where prose would do:**
 - If a sentence starts with three bullets that each contain one short phrase, it should be a sentence instead
 - Bad: "This update: • Fixes the bug • Improves performance • Adds logging"
