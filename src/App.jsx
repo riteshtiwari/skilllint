@@ -359,7 +359,7 @@ export default function SkillLint() {
   const [evaluatedContent, setEvaluatedContent] = useState("");
   const fileRef = useRef();
   const debounceRef = useRef(null);
-  const prevSignedIn = useRef(false);
+  const prevSignedIn = useRef(null);
   const improveControllerRef = useRef(null);
   const improveTimeoutRef = useRef(null);
   const improveEvalControllerRef = useRef(null);
@@ -376,9 +376,15 @@ export default function SkillLint() {
 
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
-  // Navigate to upload on sign-in, reset to landing on sign-out
+  // Navigate to upload on sign-in, reset to landing on sign-out.
+  // prevSignedIn starts as null so the first Clerk load records state without redirecting.
   useEffect(() => {
     if (!clerkLoaded) return;
+    if (prevSignedIn.current === null) {
+      // First load — user was already signed in before this page render. Stay on landing.
+      prevSignedIn.current = isSignedIn;
+      return;
+    }
     if (prevSignedIn.current === false && isSignedIn) {
       setView("upload");
       setHistoryLoading(true);
