@@ -77,13 +77,15 @@ function checkStructuralIntegrity(text) {
   }
 
   // +15 no empty sections
+  // Checks every heading including the last one in the file.
   let hasEmptySection = false;
   let emptySectionName = null;
-  for (let i = 0; i < lineArr.length - 1; i++) {
+  for (let i = 0; i < lineArr.length; i++) {
     if (/^#{1,6}\s/.test(lineArr[i])) {
       let j = i + 1;
       while (j < lineArr.length && lineArr[j].trim() === "") j++;
-      if (j < lineArr.length && /^#{1,6}\s/.test(lineArr[j])) {
+      // Empty if: next non-blank line is another heading, or end of file reached.
+      if (j >= lineArr.length || /^#{1,6}\s/.test(lineArr[j])) {
         emptySectionName = lineArr[i].replace(/^#+\s*/, "");
         hasEmptySection = true;
         break;
@@ -129,20 +131,22 @@ function checkTokenEconomics(text) {
   const tokenCount = estimateTokens(text);
   const wordCount = splitWords(text).length;
   const lineArr = splitLines(text);
+  const lineCount = lineArr.length;
 
   const maxScore = wordCount >= 100 ? 100 : 20;
 
-  // +25 under 500 tokens
-  if (tokenCount <= 500) {
-    score += 25;
-    checks.push({ passed: true, text: `File is ~${tokenCount} tokens — within target` });
-  } else if (tokenCount <= 800) {
-    checks.push({ passed: false, text: `File is ~${tokenCount} tokens — on the larger side` });
+  // +20 under 500 lines (Anthropic's documented threshold — not tokens)
+  // Reference: platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices
+  if (lineCount <= 500) {
+    score += 20;
+    checks.push({ passed: true, text: `File is ${lineCount} lines — within the 500-line target` });
+  } else if (lineCount <= 750) {
+    checks.push({ passed: false, text: `File is ${lineCount} lines — aim for under 500; split long sections into separate files` });
   } else {
-    checks.push({ passed: false, text: `File is ~${tokenCount} tokens — very large for a skill file` });
+    checks.push({ passed: false, text: `File is ${lineCount} lines — too large; use progressive disclosure and move content to linked files` });
   }
 
-  // +20 preamble under 8 lines
+  // +15 preamble under 8 lines
   const instructionVerbs = /^(use|run|call|load|read|write|create|generate|save|return|check|verify|ensure|if|when|do not|never|always|first|then|finally)/i;
   let preambleLines = 0;
   for (const line of lineArr) {
@@ -150,13 +154,13 @@ function checkTokenEconomics(text) {
     if (line.trim().length > 0) preambleLines++;
   }
   if (preambleLines <= 8) {
-    score += 20;
+    score += 15;
     checks.push({ passed: true, text: "Preamble is concise" });
   } else {
     checks.push({ passed: false, text: `Preamble is ${preambleLines} lines before first instruction` });
   }
 
-  // +20 no filler language
+  // +15 no filler language
   const fillerPatterns = [
     /please\s/i, /make sure to\s/i, /it is important (that|to)\s/i,
     /you should\s/i, /be sure to\s/i, /don't forget to\s/i,
@@ -164,17 +168,17 @@ function checkTokenEconomics(text) {
   ];
   const hasFillerLanguage = fillerPatterns.some(p => p.test(text));
   if (!hasFillerLanguage) {
-    score += 20;
+    score += 15;
     checks.push({ passed: true, text: "No filler language" });
   } else {
     checks.push({ passed: false, text: "Filler language found — softens instructions and wastes tokens" });
   }
 
-  // +20 no passive voice
+  // +15 no passive voice
   const passivePattern = /\b(should be|must be|will be|can be|may be|is being|are being|was being|were being)\s+\w+ed\b/i;
   const passiveMatches = (text.match(new RegExp(passivePattern.source, "gi")) || []).length;
   if (passiveMatches <= 2) {
-    score += 20;
+    score += 15;
     checks.push({ passed: true, text: "No passive voice in instructions" });
   } else {
     checks.push({ passed: false, text: `${passiveMatches} passive voice constructions found` });
@@ -195,14 +199,36 @@ function checkTokenEconomics(text) {
     checks.push({ passed: false, text: `${duplicates} duplicate sentence${duplicates > 1 ? "s" : ""} found` });
   }
 
+  // +10 no time-sensitive language
+  // Anthropic explicitly warns against "before August 2025" / "after 2025" patterns —
+  // they become wrong the moment time passes and corrode trust in the skill.
+  const timeSensitive = /\b(before|after|as of|since|until|by)\s+(january|february|march|april|may|june|july|august|september|october|november|december|\d{4})\b|\buntil\s+\d{4}\b|\bpre-\d{4}\b/i;
+  if (!timeSensitive.test(text)) {
+    score += 10;
+    checks.push({ passed: true, text: "No time-sensitive language" });
+  } else {
+    checks.push({ passed: false, text: "Time-sensitive language found — dates become wrong; move to an 'Old patterns' section" });
+  }
+
+  // +10 no Windows-style paths
+  // Anthropic explicitly flags backslash paths as an anti-pattern — they break on Unix.
+  // Pattern targets `word\word` and `C:\...` constructs; avoids regex escape sequences.
+  const windowsPaths = /\b[a-zA-Z]:\\|\b\w+\\\w+(?:\.\w+|\\\w+)/;
+  if (!windowsPaths.test(text)) {
+    score += 10;
+    checks.push({ passed: true, text: "No Windows-style paths" });
+  } else {
+    checks.push({ passed: false, text: "Windows-style paths found (backslashes) — use forward slashes for cross-platform compatibility" });
+  }
+
   const failed = checks.filter(c => !c.passed);
   const firstFailed = failed[0];
   let improvement = null;
   if (firstFailed) {
-    if (firstFailed.text.includes("tokens")) {
-      improvement = tokenCount > 800
-        ? "Cut to under 500 tokens — remove repeated instructions and any explanation of why rather than what."
-        : "Review for redundancy and aim under 400 tokens without losing coverage.";
+    if (firstFailed.text.includes("lines")) {
+      improvement = lineCount > 750
+        ? "Split into multiple files — move reference content, examples, and secondary instructions to linked .md files and reference them from SKILL.md."
+        : "Aim for under 500 lines — remove repeated instructions and move large reference sections to separate linked files.";
     } else if (firstFailed.text.includes("Preamble")) {
       improvement = `Move the first ${preambleLines - 5} lines of context to after the first instruction block.`;
     } else if (firstFailed.text.includes("filler")) {
@@ -211,13 +237,17 @@ function checkTokenEconomics(text) {
       improvement = "Rewrite passive constructions as active commands — 'the file should be saved' → 'save the file'.";
     } else if (firstFailed.text.includes("duplicate")) {
       improvement = "Find the repeated sentences and remove or merge them — each instruction should appear exactly once.";
+    } else if (firstFailed.text.includes("time-sensitive")) {
+      improvement = "Remove or move date-specific instructions to an 'Old patterns' or 'Legacy' section so they don't mislead future users.";
+    } else if (firstFailed.text.includes("Windows-style")) {
+      improvement = "Replace all backslashes with forward slashes in file paths — use scripts/helper.py, not scripts\\helper.py.";
     }
   }
 
   return {
     score: Math.min(maxScore, score),
     checks,
-    checkedSummary: "token count, preamble length, filler language, passive voice, duplicate sentences",
+    checkedSummary: "line count, preamble length, filler language, passive voice, duplicate sentences, time-sensitive language, Windows paths",
     improvement: score < 100 ? improvement : null,
     summary: failed.length === 0
       ? "No token waste detected."
@@ -231,61 +261,113 @@ function checkDiscoverability(text) {
   const checks = [];
   let score = 0;
 
-  // +40 description field found
+  // +25 description field found
   const hasDescription = /^description:/im.test(text) || /^## (description|trigger|when to use)/im.test(text);
   if (hasDescription) {
-    score += 40;
+    score += 25;
     checks.push({ passed: true, text: "Description or trigger field present" });
   } else {
     checks.push({ passed: false, text: "No description or trigger field found" });
   }
 
-  // +25 negative triggers present
+  // +20 description says WHEN to use — not just WHAT it does
+  // Anthropic: "description must say WHEN to use the skill, not just what it does"
+  const whenPattern = /\buse when\b|\bwhen the user\b|\btriggers when\b|\bwhen.*asks?\b|\bwhen.*mention\b|\bwhen.*want\b|\bif the user\b|\buse if\b/i;
+  // Also accept a dedicated "When to use" section as equivalent
+  const hasWhenSection = /^## (when to use|trigger|triggers)/im.test(text);
+  if (whenPattern.test(text) || hasWhenSection) {
+    score += 20;
+    checks.push({ passed: true, text: "Description specifies when to trigger the skill" });
+  } else {
+    checks.push({ passed: false, text: "Description says what the skill does but not when to use it — Claude needs both" });
+  }
+
+  // +18 description in third person
+  // Anthropic: "Always write in third person. The description is injected into the system prompt,
+  // and inconsistent point-of-view can cause discovery problems."
+  // Bad: "I can help you...", "You can use this to..."
+  const descLine = text.match(/^description:\s*["']?(.+?)["']?\s*$/im)?.[1] ?? "";
+  const firstPersonPattern = /\b(I\s+can|I\s+will|I'll|I\s+am|I'm|I\s+help|you\s+can\s+use\s+this|you\s+should\s+use\s+this)\b/i;
+  if (descLine && firstPersonPattern.test(descLine)) {
+    checks.push({ passed: false, text: "Description is in first or second person — rewrite in third person (e.g., 'Processes X' not 'I can process X')" });
+  } else {
+    score += 18;
+    checks.push({ passed: true, text: "Description is in third person" });
+  }
+
+  // +17 negative triggers present
   const hasNegativeTrigger = /do not use|never use|not for|except when|don't use|avoid using|skip (this|when)/i.test(text);
   if (hasNegativeTrigger) {
-    score += 25;
+    score += 17;
     checks.push({ passed: true, text: "Negative trigger examples present" });
   } else {
     checks.push({ passed: false, text: "No negative triggers — when NOT to use this skill is undefined" });
   }
 
-  // +20 description over 10 words
-  const descMatch = text.match(/description:\s*["']?(.+?)["']?(\n|$)/i);
-  if (descMatch && descMatch[1].split(" ").length >= 10) {
-    score += 20;
+  // +10 description is specific (≥15 words) — raised from 10 per Anthropic guidance
+  const descWordCount = descLine.trim().split(/\s+/).filter(Boolean).length;
+  if (descWordCount >= 15) {
+    score += 10;
     checks.push({ passed: true, text: "Description is specific enough to trigger reliably" });
-  } else if (descMatch) {
-    checks.push({ passed: false, text: `Description is only ${descMatch[1].split(" ").length} words — too vague to fire reliably` });
+  } else if (descWordCount > 0) {
+    checks.push({ passed: false, text: `Description is only ${descWordCount} words — too vague; aim for 15+ words with specific trigger phrases` });
+  } else {
+    // No parseable description value — check for inline description formats
+    const altDescMatch = /^## (description|when to use)[^\n]*\n+([^\n#]{15,})/im.test(text);
+    if (altDescMatch) {
+      score += 10;
+      checks.push({ passed: true, text: "Description is specific enough to trigger reliably" });
+    } else {
+      checks.push({ passed: false, text: "Description content not found or too short — add specific trigger phrases" });
+    }
   }
 
-  // +15 imperative verbs found
-  const hasImperativeVerbs = /(^|\n)\s*(use |run |call |load |read |write |create |generate |do not |never |always )/im.test(text);
-  if (hasImperativeVerbs) {
-    score += 15;
-    checks.push({ passed: true, text: "Imperative verbs found in instructions" });
+  // +10 name field valid (if present)
+  // Anthropic: name max 64 chars, lowercase letters/numbers/hyphens only,
+  // cannot contain "anthropic" or "claude", cannot contain XML tags.
+  const nameMatch = text.match(/^name:\s*["']?([^\n"']+?)["']?\s*$/im);
+  if (!nameMatch) {
+    // name field not present — advisory, not a hard failure
+    score += 10;
+    checks.push({ passed: true, text: "No name field to validate" });
   } else {
-    checks.push({ passed: false, text: "No imperative verbs — instructions are written passively" });
+    const nameVal = nameMatch[1].trim();
+    const nameErrors = [];
+    if (nameVal.length > 64) nameErrors.push(`${nameVal.length} chars — max is 64`);
+    if (!/^[a-z0-9-]+$/.test(nameVal)) nameErrors.push("must use only lowercase letters, numbers, and hyphens");
+    if (/(anthropic|claude)/i.test(nameVal)) nameErrors.push("cannot contain 'anthropic' or 'claude'");
+    if (/<[^>]+>/.test(nameVal)) nameErrors.push("cannot contain XML tags");
+    if (nameErrors.length === 0) {
+      score += 10;
+      checks.push({ passed: true, text: `Name field "${nameVal}" is valid` });
+    } else {
+      checks.push({ passed: false, text: `Name field invalid: ${nameErrors.join("; ")}` });
+    }
   }
 
   const failed = checks.filter(c => !c.passed);
   const firstFailed = failed[0];
   let improvement = null;
   if (firstFailed) {
-    if (firstFailed.text.includes("description or trigger")) {
+    if (firstFailed.text.includes("No description or trigger")) {
       improvement = "Add a 'description:' frontmatter field that lists at least 3 specific phrases users would say to trigger this skill.";
+    } else if (firstFailed.text.includes("not when to use")) {
+      improvement = "Add 'Use when: [specific scenario]' to the description — Claude needs to know both what the skill does and when to invoke it.";
+    } else if (firstFailed.text.includes("first or second person")) {
+      improvement = "Rewrite the description in third person: 'Processes X and returns Y. Use when the user asks about Z.' — not 'I can help you with X.'";
     } else if (firstFailed.text.includes("negative triggers")) {
       improvement = "Add a 'Do NOT use for...' line with at least 2 explicit exclusions to prevent conflicts with similar skills.";
     } else if (firstFailed.text.includes("words")) {
-      improvement = "Expand the description to at least 20 words and include the specific phrases a user would say.";
-    } else if (firstFailed.text.includes("imperative")) {
-      improvement = "Start instructions with action verbs: Use, Run, Call, Load, Write, Never, Always.";
+      improvement = "Expand the description to 15+ words with specific trigger phrases — what a user would literally type to invoke this skill.";
+    } else if (firstFailed.text.includes("Name field invalid")) {
+      improvement = "Fix the name field: use only lowercase letters, numbers, and hyphens (e.g., 'my-skill-name'). Max 64 characters. No 'anthropic' or 'claude'.";
     }
   }
 
   return {
     score: Math.min(100, score),
     checks,
-    checkedSummary: "description field, negative triggers, description specificity, imperative verbs",
+    checkedSummary: "description field, when-to-use trigger, third-person voice, negative triggers, description specificity, name field",
     improvement: score < 100 ? improvement : null,
     summary: failed.length === 0
       ? "Trigger is well-defined."
@@ -414,8 +496,6 @@ function checkSecurity(text) {
   let score = 0;
 
   // +30: Destructive operations have explicit confirmation gates
-  // Pattern targets verbs that can irreversibly alter or remove data/state.
-  // Bare "write" and "create" are excluded — too ambiguous in skill file prose.
   const destructiveOps = /\b(delete|remove|erase|overwrite|truncate|drop\s+table|rm\s+-rf|destroy|wipe|unlink|purge)\b/i;
   const confirmationGate = /\b(confirm|confirmation|ask\s+(?:the\s+)?user|verify\s+(?:before|with)|before\s+(?:deleting|removing|executing|proceeding)|warning[:\s]|irreversible|cannot\s+be\s+undone|backup\s+first)\b/i;
   const hasDestructive = destructiveOps.test(text);
@@ -430,8 +510,6 @@ function checkSecurity(text) {
   }
 
   // +25: Credential handling includes explicit exposure prevention
-  // "token" alone is excluded — too common in skill file discussions of context tokens.
-  // Pattern targets unambiguous secret types only.
   const credentialOps = /\b(password|api[_\s-]?key|secret[_\s-]?key|private[_\s-]?key|access[_\s-]?token|auth[_\s-]?token|bearer[_\s]+token)\b/i;
   const credProtection = /\b(do\s+not\s+(?:echo|log|print|display|expose|output|store)\b|never\s+(?:output|log|expose|print|echo)\b|mask|redact|suppress|omit)\b/i;
   const hasCredentials = credentialOps.test(text);
@@ -455,7 +533,6 @@ function checkSecurity(text) {
   }
 
   // +15: External content processing includes injection protection
-  // Only fires when the skill reads external input AND acts on it.
   const externalContent = /\b(read\s+(?:the\s+)?(?:file|content|input|page)|fetch\b|scrape\b|load\s+(?:from\s+)?(?:url|file|path)|parse\s+(?:user\s+)?input|process\s+(?:the\s+)?content|user[\s-]provided)\b/i;
   const injectionGuard = /\b(treat\s+(?:it\s+|the\s+content\s+)?as\s+(?:literal\s+)?(?:text|data)|do\s+not\s+(?:interpret|execute|follow)\b|sanitize\b|escape\b|as\s+raw\s+text\b|literal\s+content\b)\b/i;
   const hasExternalContent = externalContent.test(text);
@@ -470,7 +547,6 @@ function checkSecurity(text) {
   }
 
   // +10: State-mutating operations mention error handling
-  // Targets verbs that are unambiguously state-mutating in skill context.
   const mutatingOps = /\b(overwrite|send\s+(?:an?\s+)?(?:email|message|request|notification)|update\s+(?:the\s+)?(?:database|db|table|record|file)|modify\s+(?:the\s+)?(?:file|config|settings)|deploy\b|publish\b|delete\b|remove\b)\b/i;
   const errorHandling = /\b(if\s+(?:it\s+)?fails\b|on\s+(?:error|failure)\b|catch\b|handle\s+(?:the\s+)?error\b|report\s+(?:the\s+)?error\b|tell\s+the\s+user\b|could\s+not\b|unable\s+to\b|failed\s+to\b)\b/i;
   const hasMutatingOps = mutatingOps.test(text);
@@ -540,8 +616,8 @@ export function runStaticAnalysis(text) {
         has_output_spec: false,
       },
       staticCategories: {},
-      heuristicsEvaluated: 27,
-      heuristicsRemaining: 53,
+      heuristicsEvaluated: 31,
+      heuristicsRemaining: 49,
       needsLLM: true,
     };
   }
@@ -585,8 +661,8 @@ export function runStaticAnalysis(text) {
       examples_evidence:    examples,
       security:             security,
     },
-    heuristicsEvaluated: 27,
-    heuristicsRemaining: 53,
+    heuristicsEvaluated: 31,
+    heuristicsRemaining: 49,
     needsLLM: true,
   };
 }
